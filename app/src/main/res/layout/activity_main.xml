@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#D9D9D9">
+
+    <!-- ===== Top Bar ===== -->
+    <View
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="#505050"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/txtTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hand App"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        app:layout_constraintStart_toStartOf="@id/topBar"
+        app:layout_constraintTop_toTopOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="@id/topBar" />
+
+    <!-- Debug icon (top-right) -->
+    <ImageButton
+        android:id="@+id/btnDebug"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="12dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="Debug"
+        android:src="@drawable/bug_report_24"
+        android:tint="#2EEA72"
+        android:padding="6dp"
+        app:layout_constraintEnd_toEndOf="@id/topBar"
+        app:layout_constraintTop_toTopOf="@id/topBar"
+        app:layout_constraintBottom_toBottomOf="@id/topBar" />
+
+    <!-- ===== Big Guide Card ===== -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardGuide"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="22dp"
+        android:layout_marginEnd="22dp"
+        android:layout_marginTop="22dp"
+        android:layout_marginBottom="22dp"
+        app:cardBackgroundColor="#0D7BFF"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="0dp"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/txtGuide"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="top|center_horizontal"
+            android:paddingTop="26dp"
+            android:text="คู่มือการใช้App"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="22sp" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- ===== Bottom Bar ===== -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="0dp"
+        android:layout_height="74dp"
+        android:background="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Home -->
+        <ImageButton
+            android:id="@+id/btnHome"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Home"
+            android:src="@drawable/home_24"
+            android:tint="#0D7BFF"
+            android:layout_marginStart="36dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <!-- Help -->
+        <ImageButton
+            android:id="@+id/btnHelp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Help"
+            android:src="@drawable/help_outline_24"
+            android:tint="#000000"
+            android:layout_marginEnd="36dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ===== Camera Button (วงกลม + รูปกล้องอยู่กลาง) ===== -->
+    <ImageButton
+        android:id="@+id/btnCamera"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:contentDescription="Open Camera"
+        android:background="@drawable/bg_play_gradient"
+        android:src="@drawable/photo_camera_24"
+        android:tint="#FFFFFF"
+        android:scaleType="center"
+        android:padding="18dp"
+        android:elevation="10dp"
+        android:translationY="-18dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/bottomBar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
