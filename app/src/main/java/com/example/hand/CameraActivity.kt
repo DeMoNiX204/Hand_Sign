@@ -45,6 +45,9 @@ class CameraActivity : AppCompatActivity() {
     private var thr: ThresholdConfig = ThresholdConfig()
     private var agg: PredictionAggregator? = null
 
+    // ✅ เพิ่ม: index ของ no_action
+    private var noActionIdx: Int = -1
+
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
 
     private val askCamera = registerForActivityResult(
@@ -94,6 +97,9 @@ class CameraActivity : AppCompatActivity() {
         // init model
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
+            // ✅ ตั้ง no_action idx (ถ้าไม่เจอจะเป็น -1)
+            noActionIdx = labelMap?.indexOf("no_action") ?: -1
+
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
             agg = PredictionAggregator(numClasses = labelMap!!.size)
 
@@ -196,7 +202,11 @@ class CameraActivity : AppCompatActivity() {
 
         // per-step threshold: tau/delta
         val pass = top.topScore >= thr.tau && (top.topScore - top.secondScore) >= thr.delta
-        if (pass) agg?.add(top.topIdx, top.topScore)
+
+        // ✅ ตรงนี้คือ “ไม่นับ no_action”
+        if (pass && top.topIdx != noActionIdx) {
+            agg?.add(top.topIdx, top.topScore)
+        }
 
         // ✅ ไม่โชว์คำตอบระหว่างรัน (โชว์ตอน stopRun เท่านั้น)
     }

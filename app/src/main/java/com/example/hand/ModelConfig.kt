@@ -5,8 +5,8 @@ object ModelConfig {
     // =========================
     // ✅ เปลี่ยนโมเดล “แก้ที่นี่ที่เดียว”
     // =========================
-    const val MODEL_DIR = "model_v6"
-    const val TFLITE_NAME = "model_fp32_v6.tflite"
+    const val MODEL_DIR = "model_v7"
+    const val TFLITE_NAME = "model_fp32_v7.tflite"
     const val LABELS_NAME = "label_map.json"
     const val THRESH_NAME = "thresholds.json"
 

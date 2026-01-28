@@ -8,6 +8,10 @@ class LabelMap private constructor(private val map: Map<Int, String>) {
     val size: Int get() = map.size
     operator fun get(idx: Int): String = map[idx] ?: "class_$idx"
 
+    // ✅ เพิ่ม: หา index ของ label ด้วยชื่อ (เช่น "no_action")
+    fun indexOf(label: String): Int? =
+        map.entries.firstOrNull { it.value == label }?.key
+
     companion object {
         fun fromAssets(ctx: Context, assetPath: String): LabelMap {
             val json = ctx.assets.open(assetPath).bufferedReader().use { it.readText() }

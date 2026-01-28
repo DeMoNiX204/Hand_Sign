@@ -56,6 +56,9 @@ class DebugCameraActivity : AppCompatActivity() {
     private var thr: ThresholdConfig = ThresholdConfig()
     private var agg: PredictionAggregator? = null
 
+    // ✅ เพิ่ม: index ของ no_action
+    private var noActionIdx: Int = -1
+
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
     private var seqCount = 0
 
@@ -119,6 +122,9 @@ class DebugCameraActivity : AppCompatActivity() {
         // init model/labels/thresholds
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
+            // ✅ ตั้ง no_action idx
+            noActionIdx = labelMap?.indexOf("no_action") ?: -1
+
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
             agg = PredictionAggregator(numClasses = labelMap!!.size)
 
@@ -163,6 +169,7 @@ class DebugCameraActivity : AppCompatActivity() {
                     "thr=${ModelConfig.MODEL_THRESH_ASSET}\n" +
                     "holistic=${ModelConfig.HOLISTIC_TASK}\n" +
                     "shape=${ModelConfig.SEQ_T}x${ModelConfig.FEAT_F}\n" +
+                    "no_action_idx=$noActionIdx\n" +
                     "accept: count[${ModelConfig.MIN_COUNT_TO_ACCEPT}..${ModelConfig.MAX_COUNT_TO_ACCEPT}] " +
                     "sum[${ModelConfig.MIN_SUM_TO_ACCEPT}..${ModelConfig.MAX_SUM_TO_ACCEPT}] " +
                     "avg[${ModelConfig.MIN_AVG_SCORE_TO_ACCEPT}..${ModelConfig.MAX_AVG_SCORE_TO_ACCEPT}]"
@@ -268,11 +275,17 @@ class DebugCameraActivity : AppCompatActivity() {
             val probs = classifier?.predict(seq.toFlatFloatArray())
             if (probs != null) {
                 top = top1top2(probs)
+
+                // threshold gate
                 pass = top.topScore >= thr.tau && (top.topScore - top.secondScore) >= thr.delta
+
+                // ✅ ไม่ให้ no_action ผ่าน (ทั้งไม่นับ และไม่โชว์)
+                if (pass && top.topIdx == noActionIdx) pass = false
+
                 top5 = topK(probs, 5)
-                if (pass) agg?.add(top.topIdx, top.topScore)
 
                 if (pass) {
+                    agg?.add(top.topIdx, top.topScore)
                     val key = labelMap?.get(top.topIdx) ?: "class_${top.topIdx}"
                     setStatus("${i18n.t(key)} (${f2(top.topScore)})")
                 } else {
@@ -335,6 +348,7 @@ class DebugCameraActivity : AppCompatActivity() {
         sb.appendLine("pose=${gate.poseCount}  Lhand=${gate.leftHandCount}  Rhand=${gate.rightHandCount}")
         sb.appendLine("meanVis=${f2(gate.meanVis)}  goodVis=${gate.goodVisCount}")
         sb.appendLine("thr: tau=${f2(thr.tau)}  delta=${f2(thr.delta)}")
+        sb.appendLine("no_action_idx=$noActionIdx")
 
         if (nonZero != null) sb.appendLine("feat nonZero=$nonZero / ${ModelConfig.FEAT_F}")
         if (first12 != null) sb.appendLine("feat[0..11]=[$first12]")
