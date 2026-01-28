@@ -25,7 +25,6 @@ class CameraActivity : AppCompatActivity() {
     private val kLang = "th"
     private lateinit var i18n: I18n
 
-    // ✅ กล้องหลัง
     private val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private val mirrorX = false
 
@@ -38,15 +37,11 @@ class CameraActivity : AppCompatActivity() {
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private var isRunning = false
 
-    // ML
     private var runner: HolisticLandmarkerRunner? = null
     private var classifier: LitertSequenceClassifier? = null
     private var labelMap: LabelMap? = null
     private var thr: ThresholdConfig = ThresholdConfig()
     private var agg: PredictionAggregator? = null
-
-    // ✅ เพิ่ม: index ของ no_action
-    private var noActionIdx: Int = -1
 
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
 
@@ -81,7 +76,6 @@ class CameraActivity : AppCompatActivity() {
             finish()
         }
 
-        // ✅ check assets ตาม ModelConfig
         val missing = buildList {
             if (!assetExists(ModelConfig.HOLISTIC_TASK)) add(ModelConfig.HOLISTIC_TASK)
             if (!assetExists(ModelConfig.MODEL_TFLITE_ASSET)) add(ModelConfig.MODEL_TFLITE_ASSET)
@@ -94,12 +88,8 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        // init model
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
-            // ✅ ตั้ง no_action idx (ถ้าไม่เจอจะเป็น -1)
-            noActionIdx = labelMap?.indexOf("no_action") ?: -1
-
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
             agg = PredictionAggregator(numClasses = labelMap!!.size)
 
@@ -114,7 +104,6 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        // init holistic
         try {
             runner = HolisticLandmarkerRunner(
                 context = this,
@@ -139,14 +128,12 @@ class CameraActivity : AppCompatActivity() {
     private fun startRun() {
         isRunning = true
         seq.reset()
-        agg?.reset()
+        agg?.reset() // ✅ เริ่มใหม่ค่อยล้างผลสะสม
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
-
-        // ✅ ระหว่างรันไม่โชว์คำแปล
         setStatus(i18nSafe("detecting", "กำลังจับท่า..."))
     }
 
-    // ✅ stopRun() แบบเต็ม (ใช้ MIN/MAX)
+    // ✅ แบบ A: ห้ามสรุปเป็น no_action
     private fun stopRun(showSummary: Boolean) {
         isRunning = false
         imgToggle.setImageResource(android.R.drawable.ic_media_play)
@@ -163,7 +150,10 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        val best = a.bestResult(
+        val noActionIdx = findLabelIndex(lm, "no_action")
+
+        val best = a.bestResultExclude(
+            excludeIdx = noActionIdx,
             minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
             maxCount = ModelConfig.MAX_COUNT_TO_ACCEPT,
             minSum = ModelConfig.MIN_SUM_TO_ACCEPT,
@@ -178,18 +168,30 @@ class CameraActivity : AppCompatActivity() {
         }
 
         val key = lm[best.idx]
-        val thai = i18n.t(key)
-        setStatus("${i18nSafe("summary", "ผลสรุป")}: $thai")
+        setStatus("${i18nSafe("summary", "ผลสรุป")}: ${i18n.t(key)}")
+    }
+
+    private fun findLabelIndex(lm: LabelMap, target: String): Int? {
+        for (i in 0 until lm.size) {
+            if (lm[i] == target) return i
+        }
+        return null
     }
 
     private fun onHolisticResult(result: HolisticLandmarkerResult) {
         if (!isRunning) return
 
-        // Gate: ไม่มีคน -> ไม่ทำนับ
+        // ✅ ไม่เจอคน: reset แค่ seq (ไม่ล้าง agg)
         if (!hasPerson(result)) {
             seq.reset()
-            agg?.reset()
             setStatus(i18nSafe("no_person", "ไม่พบคน"))
+            return
+        }
+
+        // ✅ ต้องเห็นแขนทั้ง 2 ข้าง: reset แค่ seq (ไม่ล้าง agg)
+        if (!hasBothArms(result)) {
+            seq.reset()
+            setStatus(i18nSafe("need_both_arms", "กรุณาให้เห็นแขนทั้ง 2 ข้าง"))
             return
         }
 
@@ -200,15 +202,8 @@ class CameraActivity : AppCompatActivity() {
         val probs = classifier?.predict(seq.toFlatFloatArray()) ?: return
         val top = top1top2(probs)
 
-        // per-step threshold: tau/delta
         val pass = top.topScore >= thr.tau && (top.topScore - top.secondScore) >= thr.delta
-
-        // ✅ ตรงนี้คือ “ไม่นับ no_action”
-        if (pass && top.topIdx != noActionIdx) {
-            agg?.add(top.topIdx, top.topScore)
-        }
-
-        // ✅ ไม่โชว์คำตอบระหว่างรัน (โชว์ตอน stopRun เท่านั้น)
+        if (pass) agg?.add(top.topIdx, top.topScore)
     }
 
     private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
@@ -224,6 +219,26 @@ class CameraActivity : AppCompatActivity() {
         }
         val meanVis = sumVis / pose.size
         return meanVis >= 0.25f && good >= 8
+    }
+
+    private fun hasBothArms(r: HolisticLandmarkerResult): Boolean {
+        val pose = r.poseLandmarks()
+        if (pose.size < 17) return false
+
+        fun ok(idx: Int, visTh: Float): Boolean {
+            val lm = pose[idx]
+            val vis = try { lm.visibility().orElse(0f) } catch (_: Throwable) { 0f }
+            val inFrame = lm.x() in 0f..1f && lm.y() in 0f..1f
+            return inFrame && vis >= visTh
+        }
+
+        val vS = 0.35f
+        val vE = 0.35f
+        val vW = 0.35f
+
+        val leftOk = ok(11, vS) && ok(13, vE) && ok(15, vW)
+        val rightOk = ok(12, vS) && ok(14, vE) && ok(16, vW)
+        return leftOk && rightOk
     }
 
     private fun startCamera() {
@@ -269,12 +284,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun assetExists(name: String): Boolean {
-        return try {
-            assets.open(name).close()
-            true
-        } catch (_: Throwable) {
-            false
-        }
+        return try { assets.open(name).close(); true } catch (_: Throwable) { false }
     }
 
     override fun onDestroy() {
@@ -289,7 +299,6 @@ class CameraActivity : AppCompatActivity() {
         super.onBackPressed()
     }
 
-    // ===== Top2 helper (ไม่ต้องพึ่ง ArgMax.kt) =====
     private data class Top2(
         val topIdx: Int,
         val topScore: Float,

@@ -56,9 +56,6 @@ class DebugCameraActivity : AppCompatActivity() {
     private var thr: ThresholdConfig = ThresholdConfig()
     private var agg: PredictionAggregator? = null
 
-    // ✅ เพิ่ม: index ของ no_action
-    private var noActionIdx: Int = -1
-
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
     private var seqCount = 0
 
@@ -122,9 +119,6 @@ class DebugCameraActivity : AppCompatActivity() {
         // init model/labels/thresholds
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
-            // ✅ ตั้ง no_action idx
-            noActionIdx = labelMap?.indexOf("no_action") ?: -1
-
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
             agg = PredictionAggregator(numClasses = labelMap!!.size)
 
@@ -169,7 +163,6 @@ class DebugCameraActivity : AppCompatActivity() {
                     "thr=${ModelConfig.MODEL_THRESH_ASSET}\n" +
                     "holistic=${ModelConfig.HOLISTIC_TASK}\n" +
                     "shape=${ModelConfig.SEQ_T}x${ModelConfig.FEAT_F}\n" +
-                    "no_action_idx=$noActionIdx\n" +
                     "accept: count[${ModelConfig.MIN_COUNT_TO_ACCEPT}..${ModelConfig.MAX_COUNT_TO_ACCEPT}] " +
                     "sum[${ModelConfig.MIN_SUM_TO_ACCEPT}..${ModelConfig.MAX_SUM_TO_ACCEPT}] " +
                     "avg[${ModelConfig.MIN_AVG_SCORE_TO_ACCEPT}..${ModelConfig.MAX_AVG_SCORE_TO_ACCEPT}]"
@@ -183,7 +176,7 @@ class DebugCameraActivity : AppCompatActivity() {
         isRunning = true
         seq.reset()
         seqCount = 0
-        agg?.reset()
+        agg?.reset() // ✅ เริ่มใหม่ค่อยล้างผลสะสม
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
 
         fpsStartTs = SystemClock.elapsedRealtime()
@@ -194,6 +187,7 @@ class DebugCameraActivity : AppCompatActivity() {
         setStatus(i18nSafe("detecting", "กำลังจับท่า..."))
     }
 
+    // ✅ แบบ A: STOP ต้องห้ามสรุปเป็น no_action
     private fun stopRun(showSummary: Boolean) {
         isRunning = false
         imgToggle.setImageResource(android.R.drawable.ic_media_play)
@@ -210,7 +204,10 @@ class DebugCameraActivity : AppCompatActivity() {
             return
         }
 
-        val best = a.bestResult(
+        val noActionIdx = findLabelIndex(lm, "no_action")
+
+        val best = a.bestResultExclude(
+            excludeIdx = noActionIdx,
             minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
             maxCount = ModelConfig.MAX_COUNT_TO_ACCEPT,
             minSum = ModelConfig.MIN_SUM_TO_ACCEPT,
@@ -232,6 +229,13 @@ class DebugCameraActivity : AppCompatActivity() {
         )
     }
 
+    private fun findLabelIndex(lm: LabelMap, target: String): Int? {
+        for (i in 0 until lm.size) {
+            if (lm[i] == target) return i
+        }
+        return null
+    }
+
     // ===== result callback =====
     private fun onHolisticResult(result: HolisticLandmarkerResult) {
         // fps
@@ -245,18 +249,28 @@ class DebugCameraActivity : AppCompatActivity() {
         }
 
         val gate = calcGate(result)
+        val armsOk = hasBothArms(result) // ✅ เพิ่ม gate แขน 2 ข้าง
 
         if (!isRunning) {
-            maybeUpdateDebug(now, gate, null, null, null, false, null)
+            maybeUpdateDebug(now, gate, armsOk, null, null, null, false, null)
             return
         }
 
+        // ✅ ไม่เจอคน: reset แค่ seq/seqCount (ไม่ล้าง agg)
         if (!gate.hasPerson) {
             seq.reset()
             seqCount = 0
-            agg?.reset()
             setStatus(i18nSafe("no_person", "ไม่พบคน"))
-            maybeUpdateDebug(now, gate, null, null, null, false, null)
+            maybeUpdateDebug(now, gate, armsOk, null, null, null, false, null)
+            return
+        }
+
+        // ✅ ไม่เจอแขน 2 ข้าง: reset แค่ seq/seqCount (ไม่ล้าง agg)
+        if (!armsOk) {
+            seq.reset()
+            seqCount = 0
+            setStatus(i18nSafe("need_both_arms", "กรุณาให้เห็นแขนทั้ง 2 ข้าง"))
+            maybeUpdateDebug(now, gate, armsOk, null, null, null, false, null)
             return
         }
 
@@ -275,17 +289,11 @@ class DebugCameraActivity : AppCompatActivity() {
             val probs = classifier?.predict(seq.toFlatFloatArray())
             if (probs != null) {
                 top = top1top2(probs)
-
-                // threshold gate
                 pass = top.topScore >= thr.tau && (top.topScore - top.secondScore) >= thr.delta
-
-                // ✅ ไม่ให้ no_action ผ่าน (ทั้งไม่นับ และไม่โชว์)
-                if (pass && top.topIdx == noActionIdx) pass = false
-
                 top5 = topK(probs, 5)
+                if (pass) agg?.add(top.topIdx, top.topScore)
 
                 if (pass) {
-                    agg?.add(top.topIdx, top.topScore)
                     val key = labelMap?.get(top.topIdx) ?: "class_${top.topIdx}"
                     setStatus("${i18n.t(key)} (${f2(top.topScore)})")
                 } else {
@@ -294,7 +302,7 @@ class DebugCameraActivity : AppCompatActivity() {
             }
         }
 
-        maybeUpdateDebug(now, gate, nonZero, first12, top, pass, top5)
+        maybeUpdateDebug(now, gate, armsOk, nonZero, first12, top, pass, top5)
     }
 
     // ===== Gate =====
@@ -327,10 +335,34 @@ class DebugCameraActivity : AppCompatActivity() {
         return GateInfo(has, poseCount, left, right, meanVis, good)
     }
 
+    // ✅ เพิ่มใหม่: ต้องเห็น “ไหล่+ศอก+ข้อมือ” ทั้งซ้ายและขวา
+    // Pose index: L shoulder=11, L elbow=13, L wrist=15 | R shoulder=12, R elbow=14, R wrist=16
+    private fun hasBothArms(r: HolisticLandmarkerResult): Boolean {
+        val pose = r.poseLandmarks()
+        if (pose.size < 17) return false
+
+        fun ok(idx: Int, visTh: Float): Boolean {
+            val lm = pose[idx]
+            val vis = try { lm.visibility().orElse(0f) } catch (_: Throwable) { 0f }
+            val inFrame = lm.x() in 0f..1f && lm.y() in 0f..1f
+            return inFrame && vis >= visTh
+        }
+
+        // ถ้าไม่ผ่านง่ายไป ลดเป็น 0.25f ได้
+        val vS = 0.35f
+        val vE = 0.35f
+        val vW = 0.35f
+
+        val leftOk = ok(11, vS) && ok(13, vE) && ok(15, vW)
+        val rightOk = ok(12, vS) && ok(14, vE) && ok(16, vW)
+        return leftOk && rightOk
+    }
+
     // ===== Debug UI =====
     private fun maybeUpdateDebug(
         now: Long,
         gate: GateInfo,
+        armsOk: Boolean,
         nonZero: Int?,
         first12: String?,
         top: Top2?,
@@ -344,11 +376,10 @@ class DebugCameraActivity : AppCompatActivity() {
         sb.appendLine("FPS: ${f1(fps)}")
         sb.appendLine("RUN: $isRunning   SEQ: $seqCount/${ModelConfig.SEQ_T}")
         sb.appendLine("CAM: ${if (lensFacing == CameraSelector.LENS_FACING_BACK) "BACK" else "FRONT"}")
-        sb.appendLine("Gate: hasPerson=${gate.hasPerson}")
+        sb.appendLine("Gate: hasPerson=${gate.hasPerson}  armsOk=$armsOk")
         sb.appendLine("pose=${gate.poseCount}  Lhand=${gate.leftHandCount}  Rhand=${gate.rightHandCount}")
         sb.appendLine("meanVis=${f2(gate.meanVis)}  goodVis=${gate.goodVisCount}")
         sb.appendLine("thr: tau=${f2(thr.tau)}  delta=${f2(thr.delta)}")
-        sb.appendLine("no_action_idx=$noActionIdx")
 
         if (nonZero != null) sb.appendLine("feat nonZero=$nonZero / ${ModelConfig.FEAT_F}")
         if (first12 != null) sb.appendLine("feat[0..11]=[$first12]")
@@ -446,10 +477,9 @@ class DebugCameraActivity : AppCompatActivity() {
 
         lensFacing = newFacing
 
-        // กันข้อมูลปน
+        // ✅ กันเฟรมปน: reset แค่ seq/seqCount (ไม่ล้าง agg)
         seq.reset()
         seqCount = 0
-        agg?.reset()
 
         bindUseCases()
     }
