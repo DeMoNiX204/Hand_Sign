@@ -35,7 +35,7 @@ class DebugCameraActivity : AppCompatActivity() {
     private var cameraProvider: ProcessCameraProvider? = null
 
     // ✅ mirrorX คุณจะปรับเองทีหลัง (ตอนนี้ fix false)
-    private val mirrorX = false
+    private val mirrorX = true
 
     // UI
     private lateinit var previewView: PreviewView
