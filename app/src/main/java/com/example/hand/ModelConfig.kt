@@ -5,8 +5,8 @@ object ModelConfig {
     // =========================
     // ✅ เปลี่ยนโมเดล “แก้ที่นี่ที่เดียว”
     // =========================
-    const val MODEL_DIR = "model_v7.5"
-    const val TFLITE_NAME = "model_fp32_v7.5.tflite"
+    const val MODEL_DIR = "bi-gru_v0.2"
+    const val TFLITE_NAME = "model_fp32.tflite"
     const val LABELS_NAME = "label_map.json"
     const val THRESH_NAME = "thresholds.json"
 
@@ -26,7 +26,7 @@ object ModelConfig {
     const val MAX_COUNT_TO_ACCEPT = Int.MAX_VALUE
 
     // 2) sum (ผลรวมคะแนนของคลาสนั้น)
-    const val MIN_SUM_TO_ACCEPT = 2.5f
+    const val MIN_SUM_TO_ACCEPT = 0.3f
     const val MAX_SUM_TO_ACCEPT = Float.POSITIVE_INFINITY
 
     // 3) avg (ค่าเฉลี่ย = sum / count)
