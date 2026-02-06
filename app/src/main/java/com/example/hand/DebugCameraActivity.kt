@@ -81,6 +81,7 @@ class DebugCameraActivity : AppCompatActivity() {
             insets
         }
 
+        // 1. Init UI First
         previewView = findViewById(R.id.previewView)
         txtResult = findViewById(R.id.txtResult)
         txtDebug = findViewById(R.id.txtDebug)
@@ -89,23 +90,30 @@ class DebugCameraActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
 
-        i18n = I18n.fromAssets(this, kLang)
-
         btnBack.setOnClickListener { stopRun(false); finish() }
         btnSwitchCamera.setOnClickListener { switchCamera() }
 
-        // Check Assets
+        // 2. Check Assets
         val missing = buildList {
             if (!assetExists(ModelConfig.HOLISTIC_TASK)) add(ModelConfig.HOLISTIC_TASK)
             if (!assetExists(ModelConfig.MODEL_TFLITE_ASSET)) add(ModelConfig.MODEL_TFLITE_ASSET)
             if (!assetExists(ModelConfig.MODEL_LABELS_ASSET)) add(ModelConfig.MODEL_LABELS_ASSET)
+            if (!assetExists("i18n/$kLang.json")) add("i18n/$kLang.json")
         }
         if (missing.isNotEmpty()) {
             setStatus("❌ Assets Missing:\n${missing.joinToString("\n")}")
             return
         }
 
-        // Init Models
+        // 3. Load i18n safely
+        try {
+            i18n = I18n.fromAssets(this, kLang)
+        } catch (e: Exception) {
+            setStatus("❌ i18n fail: ${e.message}")
+            return
+        }
+
+        // 4. Init Models
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
@@ -178,7 +186,6 @@ class DebugCameraActivity : AppCompatActivity() {
         var usedTau: Float? = null
         var usedDelta: Float? = null
 
-        // เช็ค Gate Strict แบบ CameraActivity
         val personOk = hasPerson(result)
         val armsOk = hasBothArms(result)
 
@@ -187,27 +194,18 @@ class DebugCameraActivity : AppCompatActivity() {
             return
         }
 
-        // ==============================================================
-        // 🔥 LOGIC ใหม่: Gate Fail -> Pause (ห้าม Reset)
-        // ==============================================================
-
-        // 1. ไม่เจอคน -> แจ้งเตือน และ Return เลย (buffer คงเดิม)
         if (!personOk) {
-            setStatus("ไม่พบคน (หยุดชั่วคราว)")
+            setStatus("ไม่พบคน")
             maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
             return
         }
 
-        // 2. แขนไม่ครบ -> แจ้งเตือน และ Return เลย (buffer คงเดิม)
         if (!armsOk) {
-            setStatus("เห็นแขนไม่ครบ 2 ข้าง (หยุดชั่วคราว)")
+            setStatus("เห็นแขนไม่ครบ")
             maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
             return
         }
 
-        // ==============================================================
-        // ✅ Gate ผ่าน: ทำนาย Real-time
-        // ==============================================================
         val frame = Holistic258Extractor.extract(result)
         seq.add(frame)
         seqCount = min(seqCount + 1, ModelConfig.SEQ_T)
@@ -218,7 +216,6 @@ class DebugCameraActivity : AppCompatActivity() {
                 top = top1top2(probs)
                 val key = labelMap!![top.topIdx]
 
-                // Threshold Check
                 val rule = thr.forLabel(key)
                 usedLabel = key
                 usedTau = rule.tau
@@ -227,24 +224,23 @@ class DebugCameraActivity : AppCompatActivity() {
                 val diff = top.topScore - top.secondScore
                 pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
 
-                // สะสมผล (Accumulate) ถ้าผ่านเกณฑ์
                 if (pass) {
                     if (key != "no_action") agg?.add(top.topIdx, top.topScore)
                 }
 
-                // 🔥 Real-time Display (แสดงผลทันที ไม่ต้องรอหยุด)
-                setStatus("${i18n.t(key)} (${f2(top.topScore)})")
-
+                if (key == "no_action") {
+                    setStatus("DEBUG: no_action (${f2(top.topScore)})")
+                } else {
+                    setStatus("${i18n.t(key)} (${f2(top.topScore)})")
+                }
             }
         } else {
             setStatus("เก็บข้อมูล... $seqCount/30")
         }
 
-        // Update Debug Info
         maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
     }
 
-    // ===== Strict Gate Logic (เหมือน CameraActivity) =====
     private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
         val pose = r.poseLandmarks()
         if (pose.isEmpty()) return false
@@ -274,7 +270,6 @@ class DebugCameraActivity : AppCompatActivity() {
         return leftOk && rightOk
     }
 
-    // ===== Debug UI =====
     private fun maybeUpdateDebug(
         now: Long, personOk: Boolean, armsOk: Boolean, seqC: Int,
         top: Top2?, pass: Boolean,
@@ -286,8 +281,6 @@ class DebugCameraActivity : AppCompatActivity() {
         val sb = StringBuilder()
         sb.appendLine("FPS: ${f1(fps)}")
         sb.appendLine("Mode: ${if(lensFacing==CameraSelector.LENS_FACING_BACK)"Back" else "Front"}")
-
-        // Gate Status
         sb.appendLine("Gate: Person=${if(personOk)"✅" else "❌"} Arms=${if(armsOk)"✅" else "❌"}")
         sb.appendLine("Buffer: $seqC / 30")
 
@@ -374,10 +367,18 @@ class DebugCameraActivity : AppCompatActivity() {
     private fun f1(x: Float) = String.format(Locale.US, "%.1f", x)
     private fun f2(x: Float) = String.format(Locale.US, "%.2f", x)
 
+    // แก้ไขในไฟล์ DebugCameraActivity.kt
     override fun onDestroy() {
-        super.onDestroy()
+        // 1. หยุดรับภาพจากกล้องก่อนเป็นอันดับแรก (สำคัญ)
+        try { cameraProvider?.unbindAll() } catch (_: Throwable) {}
+
+        // 2. ปิด Thread
+        cameraExecutor.shutdown()
+
+        // 3. ปิด Model (ใส่ try-catch กันพลาด)
         try { runner?.close() } catch (_: Throwable) {}
         try { classifier?.close() } catch (_: Throwable) {}
-        cameraExecutor.shutdown()
+
+        super.onDestroy()
     }
 }

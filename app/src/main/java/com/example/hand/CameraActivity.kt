@@ -19,20 +19,19 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.mediapipe.tasks.vision.holisticlandmarker.HolisticLandmarkerResult
-import java.util.Locale
 import java.util.concurrent.Executors
 
 class CameraActivity : AppCompatActivity() {
 
     private val kLang = "th"
-
     private lateinit var i18n: I18n
 
-    // ===== Camera config (กล้องธรรมดาใช้กล้องหลัง) =====
+    // ===== Camera config =====
     private val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-    private val mirrorX = false
+    private val mirrorX = false // กล้องหลังไม่กลับด้าน
 
     private var cameraProvider: ProcessCameraProvider? = null
+    // ใช้ Executor แบบนี้ปลอดภัยกว่า
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
     // ===== UI =====
@@ -44,8 +43,6 @@ class CameraActivity : AppCompatActivity() {
 
     // ===== State =====
     private var isRunning = false
-
-    // กัน spam setStatus ทุกเฟรม
     private var lastUiState: String = ""
 
     // ===== ML =====
@@ -61,7 +58,7 @@ class CameraActivity : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) startCamera()
-        else setStatusState(i18nSafe("camera_permission_denied", "ไม่ได้รับสิทธิ์กล้อง"))
+        else setStatusState("ไม่ได้รับอนุญาตให้ใช้กล้อง")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,25 +72,24 @@ class CameraActivity : AppCompatActivity() {
             insets
         }
 
+        // 1. Init UI ก่อนเสมอ
         previewView = findViewById(R.id.previewView)
         txtResult = findViewById(R.id.txtResult)
         btnToggle = findViewById(R.id.btnToggle)
         imgToggle = findViewById(R.id.imgToggle)
         btnBack = findViewById(R.id.btnBack)
 
-        i18n = I18n.fromAssets(this, kLang)
-
         btnBack.setOnClickListener {
+            // หยุดการทำงานก่อนปิด
             stopRun(showSummary = false)
             finish()
         }
 
-        // ---- assets check ----
+        // 2. Check Assets (กันเข้าแล้วเด้ง)
         val missing = buildList {
             if (!assetExists(ModelConfig.HOLISTIC_TASK)) add(ModelConfig.HOLISTIC_TASK)
             if (!assetExists(ModelConfig.MODEL_TFLITE_ASSET)) add(ModelConfig.MODEL_TFLITE_ASSET)
             if (!assetExists(ModelConfig.MODEL_LABELS_ASSET)) add(ModelConfig.MODEL_LABELS_ASSET)
-            if (!assetExists(ModelConfig.MODEL_THRESH_ASSET)) add(ModelConfig.MODEL_THRESH_ASSET)
             if (!assetExists("i18n/$kLang.json")) add("i18n/$kLang.json")
         }
         if (missing.isNotEmpty()) {
@@ -101,10 +97,18 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        // ---- init models ----
+        // 3. Load i18n
+        try {
+            i18n = I18n.fromAssets(this, kLang)
+        } catch (e: Exception) {
+            setStatusState("❌ i18n error: ${e.message}")
+            return
+        }
+
+        // 4. Init ML
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
-            thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET) // ✅ per-class
+            thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
             agg = PredictionAggregator(numClasses = labelMap!!.size)
 
             classifier = LitertSequenceClassifier(
@@ -113,26 +117,20 @@ class CameraActivity : AppCompatActivity() {
                 numClasses = labelMap!!.size,
                 numThreads = 4
             )
-        } catch (t: Throwable) {
-            setStatusState("❌ init fail: ${t.message}")
-            return
-        }
 
-        // ---- init holistic runner ----
-        try {
             runner = HolisticLandmarkerRunner(
                 context = this,
                 modelAssetName = ModelConfig.HOLISTIC_TASK,
                 mirrorX = mirrorX,
                 onResult = { r -> onHolisticResult(r) },
-                onError = { msg -> setStatusState("❌ Holistic error: $msg") }
+                onError = { msg -> setStatusState("❌ ML Error: $msg") }
             )
         } catch (t: Throwable) {
-            setStatusState("❌ Holistic init fail: ${t.message}")
+            setStatusState("❌ Init Fail: ${t.message}")
             return
         }
 
-        // toggle start/stop
+        // Ready
         btnToggle.setOnClickListener {
             if (!isRunning) startRun() else stopRun(showSummary = true)
         }
@@ -146,8 +144,6 @@ class CameraActivity : AppCompatActivity() {
         seq.reset()
         agg?.reset()
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
-
-        // ✅ ระหว่างจับให้ขึ้นแค่นี้
         setStatusState(i18nSafe("detecting", "กำลังจับท่า..."))
     }
 
@@ -160,14 +156,8 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        val lm = labelMap
-        val a = agg
-        if (lm == null || a == null) {
-            setStatusState(i18nSafe("stopped", "หยุดแล้ว"))
-            return
-        }
-
-        // ไม่สรุปเป็น no_action
+        val lm = labelMap ?: return
+        val a = agg ?: return
         val noActionIdx = findLabelIndex(lm, "no_action")
 
         val best = a.bestResultExclude(
@@ -182,103 +172,81 @@ class CameraActivity : AppCompatActivity() {
 
         if (best == null) {
             setStatusState(i18nSafe("not_sure", "ยังไม่มั่นใจ ลองใหม่"))
-            return
+        } else {
+            val key = lm[best.idx]
+            setStatusState("${i18nSafe("summary", "ผลลัพธ์")}: ${i18n.t(key)}")
         }
-
-        val key = lm[best.idx]
-        // ✅ โชว์ชื่อท่าเฉพาะตอน “ผลลัพธ์/สรุป”
-        setStatusState("${i18nSafe("summary", "ผลลัพธ์")}: ${i18n.t(key)}")
     }
 
-    private fun findLabelIndex(lm: LabelMap, target: String): Int? {
-        for (i in 0 until lm.size) if (lm[i] == target) return i
-        return null
-    }
-
-    // =========================
-    // Core: ระหว่างจับ “ไม่โชว์ชื่อท่า”
-    // =========================
+    // ===== Core Logic =====
     private fun onHolisticResult(result: HolisticLandmarkerResult) {
         if (!isRunning) return
+        if (labelMap == null || classifier == null) return
 
-        // 1) ไม่พบคน -> แจ้งเตือน + Pause (ไม่ Reset Buffer)
         if (!hasPerson(result)) {
-            // seq.reset() <--- เอาออก (Pause)
-            setStatusState(i18nSafe("no_person", "ไม่พบคน (หยุดชั่วคราว)"))
+            setStatusState(i18nSafe("no_person", "ไม่พบคน"))
             return
         }
-
-        // 2) พบคนแต่แขนไม่ครบ -> แจ้งเตือน + Pause (ไม่ Reset Buffer)
         if (!hasBothArms(result)) {
-            // seq.reset() <--- เอาออก (Pause)
-            setStatusState(i18nSafe("need_both_arms", "กรุณาให้เห็นแขนทั้ง 2 ข้าง"))
+            setStatusState(i18nSafe("need_both_arms", "เห็นแขนไม่ครบ"))
             return
         }
 
-        // 3) เจอคน + แขนครบ -> ต้องกลับไป “กำลังจับท่า...”
         setStatusState(i18nSafe("detecting", "กำลังจับท่า..."))
 
-        // ---- pipeline ปกติ (สะสมผลอย่างเดียว ไม่โชว์ชื่อท่า) ----
         val frame = Holistic258Extractor.extract(result)
         seq.add(frame)
         if (!seq.isFull()) return
 
         val probs = classifier?.predict(seq.toFlatFloatArray()) ?: return
         val top = top1top2(probs)
-
-        val lm = labelMap ?: return
-        val key = lm[top.topIdx]
+        val key = labelMap!![top.topIdx]
 
         val rule = thr.forLabel(key)
         val diff = top.topScore - top.secondScore
         val pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
 
-        if (pass) {
-            // ✅ ไม่สะสม no_action (เพราะไม่อยากให้ผลลัพธ์ออกเป็น no_action)
-            if (key != "no_action") {
-                agg?.add(top.topIdx, top.topScore)
-            }
-            // ❌ ไม่ setStatus เป็นชื่อท่าในระหว่างจับ (ตาม Logic หน้ากล้องปกติ)
+        if (pass && key != "no_action") {
+            agg?.add(top.topIdx, top.topScore)
         }
     }
 
+    // ... (ฟังก์ชัน Helper hasPerson, hasBothArms, top1top2 เหมือนเดิม) ...
     private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
         val pose = r.poseLandmarks()
         if (pose.isEmpty()) return false
-
-        var sumVis = 0f
         var good = 0
-        for (lm in pose) {
-            val vis = try { lm.visibility().orElse(0f) } catch (_: Throwable) { 0f }
-            sumVis += vis
-            if (vis >= 0.5f) good++
-        }
-        val meanVis = sumVis / pose.size
-        return meanVis >= 0.25f && good >= 8
+        for (lm in pose) if ((lm.visibility().orElse(0f)) >= 0.5f) good++
+        return good >= 8
     }
 
-    // ต้องเห็นไหล่+ศอก+ข้อมือ ทั้ง 2 ข้าง
     private fun hasBothArms(r: HolisticLandmarkerResult): Boolean {
         val pose = r.poseLandmarks()
         if (pose.size < 17) return false
-
-        fun ok(idx: Int, visTh: Float): Boolean {
-            val lm = pose[idx]
-            val vis = try { lm.visibility().orElse(0f) } catch (_: Throwable) { 0f }
-            val inFrame = lm.x() in 0f..1f && lm.y() in 0f..1f
-            return inFrame && vis >= visTh
+        fun ok(i: Int): Boolean {
+            val lm = pose[i]
+            return (lm.x() in 0f..1f && lm.y() in 0f..1f && (lm.visibility().orElse(0f) >= 0.35f))
         }
-
-        val vS = 0.35f
-        val vE = 0.35f
-        val vW = 0.35f
-
-        val leftOk = ok(11, vS) && ok(13, vE) && ok(15, vW)
-        val rightOk = ok(12, vS) && ok(14, vE) && ok(16, vW)
-        return leftOk && rightOk
+        return (ok(11) && ok(13) && ok(15)) && (ok(12) && ok(14) && ok(16))
     }
 
-    // ===== CameraX 1280x720 =====
+    private fun top1top2(probs: FloatArray): Top2 {
+        var topIdx = 0; var topScore = -1f
+        var secIdx = 0; var secScore = -1f
+        for (i in probs.indices) {
+            val v = probs[i]
+            if (v > topScore) { secScore = topScore; secIdx = topIdx; topScore = v; topIdx = i }
+            else if (v > secScore) { secScore = v; secIdx = i }
+        }
+        return Top2(topIdx, topScore, secIdx, secScore)
+    }
+
+    private fun findLabelIndex(lm: LabelMap, t: String): Int? {
+        for (i in 0 until lm.size) if (lm[i] == t) return i
+        return null
+    }
+
+    // ===== Camera =====
     private fun startCamera() {
         val providerFuture = ProcessCameraProvider.getInstance(this)
         providerFuture.addListener({
@@ -289,91 +257,51 @@ class CameraActivity : AppCompatActivity() {
 
     private fun bindUseCases() {
         val provider = cameraProvider ?: return
-
         try { Holistic258Extractor.setMirror(mirrorX) } catch (_: Throwable) {}
 
-        val preview = Preview.Builder()
-            .setTargetResolution(Size(1280, 720))
-            .build()
-            .apply { setSurfaceProvider(previewView.surfaceProvider) }
+        val preview = Preview.Builder().build()
+        preview.setSurfaceProvider(previewView.surfaceProvider)
 
         val analysis = ImageAnalysis.Builder()
-            .setTargetResolution(Size(1280, 720))
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
 
         val r = runner
         if (r != null) {
-            analysis.setAnalyzer(
-                cameraExecutor,
-                HolisticFrameAnalyzer(
-                    enabled = { true },
-                    runner = r
-                )
-            )
+            analysis.setAnalyzer(cameraExecutor, HolisticFrameAnalyzer({ true }, r))
         }
 
         provider.unbindAll()
         provider.bindToLifecycle(this, cameraSelector, preview, analysis)
     }
 
-    // ✅ เปลี่ยนข้อความเฉพาะตอน “สถานะเปลี่ยน” (กันกระพริบ/สั่น)
     private fun setStatusState(msg: String) {
         if (msg == lastUiState) return
         lastUiState = msg
-        runOnUiThread { if (::txtResult.isInitialized) txtResult.text = msg }
+        if (::txtResult.isInitialized) runOnUiThread { txtResult.text = msg }
     }
 
     private fun i18nSafe(key: String, fallback: String): String {
-        if (!::i18n.isInitialized) return fallback
-        val v = try { i18n.t(key) } catch (_: Throwable) { key }
-        return if (v == key) fallback else v
+        return if (::i18n.isInitialized) i18n.t(key) else fallback
     }
 
-    private fun assetExists(name: String): Boolean {
-        return try { assets.open(name).close(); true } catch (_: Throwable) { false }
-    }
+    private fun assetExists(n: String) = try { assets.open(n).close(); true } catch (_: Throwable) { false }
 
+    // 🔥🔥 จุดสำคัญ: แก้ onDestroy เพื่อป้องกัน Crash ตอนกด Back 🔥🔥
     override fun onDestroy() {
-        super.onDestroy()
+        // 1. หยุดรับภาพจากกล้องทันที (สำคัญมาก)
+        try { cameraProvider?.unbindAll() } catch (_: Throwable) {}
+
+        // 2. ปิด Thread ที่ประมวลผล
+        cameraExecutor.shutdown()
+
+        // 3. ปิด Model
         try { runner?.close() } catch (_: Throwable) {}
         try { classifier?.close() } catch (_: Throwable) {}
-        cameraExecutor.shutdown()
+
+        super.onDestroy()
     }
 
-    override fun onBackPressed() {
-        stopRun(showSummary = false)
-        super.onBackPressed()
-    }
-
-    private data class Top2(
-        val topIdx: Int,
-        val topScore: Float,
-        val secondIdx: Int,
-        val secondScore: Float
-    )
-
-    private fun top1top2(probs: FloatArray): Top2 {
-        var topIdx = -1
-        var secondIdx = -1
-        var topScore = Float.NEGATIVE_INFINITY
-        var secondScore = Float.NEGATIVE_INFINITY
-
-        for (i in probs.indices) {
-            val v = probs[i]
-            if (v > topScore) {
-                secondScore = topScore
-                secondIdx = topIdx
-                topScore = v
-                topIdx = i
-            } else if (v > secondScore) {
-                secondScore = v
-                secondIdx = i
-            }
-        }
-        if (topIdx < 0) topIdx = 0
-        if (secondIdx < 0) secondIdx = topIdx
-        return Top2(topIdx, topScore, secondIdx, secondScore)
-    }
+    private data class Top2(val topIdx: Int, val topScore: Float, val secondIdx: Int, val secondScore: Float)
 }

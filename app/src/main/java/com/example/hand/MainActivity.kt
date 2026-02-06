@@ -3,6 +3,7 @@ package com.example.hand
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -21,32 +22,49 @@ class MainActivity : AppCompatActivity() {
         val root = findViewById<View>(R.id.main)
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(sys.left, sys.top, sys.right, sys.bottom)
+            // ไม่ใส่ padding ด้านบน เพื่อให้สีแดงขึ้นไปเต็มด้านบน
+            v.setPadding(sys.left, 0, sys.right, sys.bottom)
             insets
         }
 
-        val btnCamera = findViewById<ImageButton>(R.id.btnCamera)
+        // Buttons from Design 4
+        val fabCamera = findViewById<FrameLayout>(R.id.fabCamera)
         val btnDebug  = findViewById<ImageButton>(R.id.btnDebug)
-        val btnHome   = findViewById<ImageButton>(R.id.btnHome)
-        val btnHelp   = findViewById<ImageButton>(R.id.btnHelp)
-        val cardGuide = findViewById<CardView>(R.id.cardGuide)
 
-        btnCamera.setOnClickListener {
+        // Cards from Design 4
+        val cardGuide    = findViewById<CardView>(R.id.cardGuide)
+        val cardHistory  = findViewById<CardView>(R.id.cardHistory)
+        val cardSettings = findViewById<CardView>(R.id.cardSettings)
+        val cardHelp     = findViewById<CardView>(R.id.cardHelp)
+
+        // FAB Camera - เปิดกล้อง
+        fabCamera.setOnClickListener {
             startActivity(Intent(this, CameraActivity::class.java))
         }
 
+        // Debug Button - เปิด Debug Camera
         btnDebug.setOnClickListener {
             startActivity(Intent(this, DebugCameraActivity::class.java))
         }
 
-        btnHome.setOnClickListener { /* อยู่หน้า Home */ }
-
-        btnHelp.setOnClickListener {
-            Toast.makeText(this, "Help", Toast.LENGTH_SHORT).show()
-        }
-
+        // Card: คู่มือใช้งาน
         cardGuide.setOnClickListener {
             Toast.makeText(this, "คู่มือ (ยังไม่ได้ทำหน้า Guide)", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: ประวัติการใช้
+        cardHistory.setOnClickListener {
+            Toast.makeText(this, "คลังวิดีโอ", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: ตั้งค่า
+        cardSettings.setOnClickListener {
+            Toast.makeText(this, "เกี่ยวกับApp", Toast.LENGTH_SHORT).show()
+        }
+
+        // Card: ช่วยเหลือ
+        cardHelp.setOnClickListener {
+            Toast.makeText(this, "ผู้จัดทำ", Toast.LENGTH_SHORT).show()
         }
     }
 }

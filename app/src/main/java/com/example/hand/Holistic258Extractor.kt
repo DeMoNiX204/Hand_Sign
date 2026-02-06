@@ -4,30 +4,17 @@ import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.holisticlandmarker.HolisticLandmarkerResult
 import kotlin.math.hypot
 
-/**
- * 258-dim feature extractor.
- *
- * Layout (float32):
- * - Pose:       33 * (x, y, z, visibility) = 132
- * - Left hand:  21 * (x, y, z)            = 63
- * - Right hand: 21 * (x, y, z)            = 63
- *
- * Training-match normalization:
- * - Apply mirrorX on x first (for front camera, if you trained that way).
- * - Compute shoulder-mid using pose landmarks 11 (L shoulder) and 12 (R shoulder).
- * - Compute shoulder width = distance between (11) and (12) in (x,y).
- * - For every landmark coordinate: (x,y,z) -> ((x-cx)/s, (y-cy)/s, (z-cz)/s)
- * where (cx,cy,cz) is shoulder-mid and s = max(shoulderWidth, eps).
- *
- * Update:
- * - Fixed missing hand handling: if hand is not detected, fill 0.0 (instead of calculating with raw 0).
- */
 object Holistic258Extractor {
 
     private const val EPS = 1e-6f
 
-    private var mirrorX: Boolean = false
-    fun setMirror(mirror: Boolean) { mirrorX = mirror }
+    // 🔥 บังคับเป็น true เสมอ เพื่อให้เหมือนภาพจาก Webcam (แก้ปัญหาซ้าย/ขวาสลับกัน)
+    private var mirrorX: Boolean = true
+
+    fun setMirror(mirror: Boolean) {
+        // mirrorX = mirror // ❌ ปิดไว้ก่อน เพื่อบังคับเทสด้วยโหมด Mirror
+        mirrorX = true
+    }
 
     fun extract(r: HolisticLandmarkerResult): FloatArray {
         val out = FloatArray(258)
@@ -35,10 +22,11 @@ object Holistic258Extractor {
 
         val pose = r.poseLandmarks()
 
-        // ---- reference for normalization (shoulder mid + shoulder width) ----
+        // ---- 1. หาจุดอ้างอิง (Reference) จากไหล่ ----
         val lShoulder = pose.getOrNullSafe(11)
         val rShoulder = pose.getOrNullSafe(12)
 
+        // ถ้า mirrorX=true จะกลับค่า x เป็น (1 - x)
         val lxs = lShoulder?.x()?.let { if (mirrorX) 1f - it else it }
         val lys = lShoulder?.y()
         val lzs = lShoulder?.z()
@@ -53,16 +41,15 @@ object Holistic258Extractor {
         ) {
             val cx = (lxs + rxs) * 0.5f
             val cy = (lys + rys) * 0.5f
-            val cz = (lzs + rzs) * 0.5f
+            val cz = (lzs + rzs) * 0.5f // ค่า Z เฉลี่ยของไหล่
             val shoulderW = hypot((lxs - rxs).toDouble(), (lys - rys).toDouble()).toFloat()
             val s = if (shoulderW > EPS) shoulderW else 1f
             Ref(cx, cy, cz, s)
         } else {
-            // Fallback: no reliable shoulders -> don't normalize
             Ref(0f, 0f, 0f, 1f)
         }
 
-        // 1) Pose: 33 * (x,y,z,visibility) = 132
+        // ---- 2. Pose (33 points) ----
         for (i in 0 until 33) {
             val lm = pose.getOrNullSafe(i)
             val rawX = lm?.x()?.let { if (mirrorX) 1f - it else it } ?: 0f
@@ -70,16 +57,19 @@ object Holistic258Extractor {
             val rawZ = lm?.z() ?: 0f
             val vis = lm?.visibility()?.orElse(0f) ?: 0f
 
+            // สูตร Python: (val - center) / size
             out[k++] = (rawX - ref.cx) / ref.s
             out[k++] = (rawY - ref.cy) / ref.s
+
+            // 🔥 แก้ไข: ต้องลบ ref.cz เพื่อให้ตรงกับ extractkeypoint.py บรรทัด 67
             out[k++] = (rawZ - ref.cz) / ref.s
+
             out[k++] = vis
         }
 
-        // 2) Left hand: 21 * (x,y,z) = 63
+        // ---- 3. Left Hand (21 points) ----
         val lh = r.leftHandLandmarks()
         if (lh.isEmpty()) {
-            // ✅ FIX: ถ้าไม่มีมือ ให้ใส่ 0.0 ทั้งหมด (เพื่อให้เหมือน Python Zero Padding)
             repeat(21 * 3) { out[k++] = 0f }
         } else {
             for (i in 0 until 21) {
@@ -90,14 +80,13 @@ object Holistic258Extractor {
 
                 out[k++] = (rawX - ref.cx) / ref.s
                 out[k++] = (rawY - ref.cy) / ref.s
-                out[k++] = (rawZ - ref.cz) / ref.s
+                out[k++] = (rawZ - ref.cz) / ref.s // 🔥 แก้ไข: ลบ ref.cz
             }
         }
 
-        // 3) Right hand: 21 * (x,y,z) = 63
+        // ---- 4. Right Hand (21 points) ----
         val rh = r.rightHandLandmarks()
         if (rh.isEmpty()) {
-            // ✅ FIX: ถ้าไม่มีมือ ให้ใส่ 0.0 ทั้งหมด
             repeat(21 * 3) { out[k++] = 0f }
         } else {
             for (i in 0 until 21) {
@@ -108,7 +97,7 @@ object Holistic258Extractor {
 
                 out[k++] = (rawX - ref.cx) / ref.s
                 out[k++] = (rawY - ref.cy) / ref.s
-                out[k++] = (rawZ - ref.cz) / ref.s
+                out[k++] = (rawZ - ref.cz) / ref.s // 🔥 แก้ไข: ลบ ref.cz
             }
         }
 
@@ -120,9 +109,6 @@ object Holistic258Extractor {
     }
 
     private data class Ref(
-        val cx: Float,
-        val cy: Float,
-        val cz: Float,
-        val s: Float
+        val cx: Float, val cy: Float, val cz: Float, val s: Float
     )
 }

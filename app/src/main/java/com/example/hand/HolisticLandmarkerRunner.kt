@@ -18,11 +18,12 @@ class HolisticLandmarkerRunner(
     private val onError: (String) -> Unit
 ) : AutoCloseable {
 
-    private val landmarker: HolisticLandmarker
+    private var landmarker: HolisticLandmarker? = null
+    private var isClosed = false
 
     init {
         val base = BaseOptions.builder()
-            .setModelAssetPath(modelAssetName) // "holistic_landmarker.task"
+            .setModelAssetPath(modelAssetName)
             .build()
 
         val options = HolisticLandmarker.HolisticLandmarkerOptions.builder()
@@ -31,17 +32,18 @@ class HolisticLandmarkerRunner(
             .setOutputFaceBlendshapes(false)
             .setOutputPoseSegmentationMasks(false)
             .setResultListener { result, input ->
+                // ถ้าปิดไปแล้ว ไม่ต้องส่งผลลัพธ์กลับ
+                if (isClosed) return@setResultListener
+
                 try {
-                    // ส่ง result ให้ต่อไปสกัด 258
                     onResult(result)
                 } catch (t: Throwable) {
                     onError(t.message ?: "onResult failed")
-                } finally {
-                    try { input.close() } catch (_: Throwable) {}
                 }
+                // ไม่ต้อง input.close() ที่นี่เพราะ MediaPipe จัดการให้ใน Live Stream Mode (แต่ถ้าใส่ก็ได้)
             }
             .setErrorListener { e ->
-                onError(e.message ?: "HolisticLandmarker error")
+                if (!isClosed) onError(e.message ?: "HolisticLandmarker error")
             }
             .build()
 
@@ -56,21 +58,36 @@ class HolisticLandmarkerRunner(
         rotationDegrees: Int,
         timestampMs: Long
     ) {
-        val mpImage = ByteBufferImageBuilder(
-            rgbaBuffer,
-            width,
-            height,
-            MPImage.IMAGE_FORMAT_RGBA
-        ).build()
+        if (isClosed || landmarker == null) return
 
-        val opt = ImageProcessingOptions.builder()
-            .setRotationDegrees(rotationDegrees)
-            .build()
+        try {
+            val mpImage = ByteBufferImageBuilder(
+                rgbaBuffer,
+                width,
+                height,
+                MPImage.IMAGE_FORMAT_RGBA
+            ).build()
 
-        landmarker.detectAsync(mpImage, opt, timestampMs)
+            val opt = ImageProcessingOptions.builder()
+                .setRotationDegrees(rotationDegrees)
+                .build()
+
+            // 🔥 ใส่ try-catch ป้องกัน Crash ถ้าเผลอเรียกตอนปิดแอป
+            landmarker?.detectAsync(mpImage, opt, timestampMs)
+
+        } catch (e: Exception) {
+            // กิน Error ทิ้งไปเลยถ้ามันพังตอนปิด
+            if (!isClosed) {
+                onError("Detect error: ${e.message}")
+            }
+        }
     }
 
     override fun close() {
-        landmarker.close()
+        isClosed = true
+        try {
+            landmarker?.close()
+        } catch (_: Throwable) {}
+        landmarker = null
     }
 }

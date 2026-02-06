@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- กล้อง -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -16,23 +15,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ปุ่มกลับ -->
     <ImageButton
         android:id="@+id/btnBack"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:layout_marginStart="14dp"
         android:layout_marginTop="14dp"
-        android:background="@android:color/transparent"
-        android:src="@android:drawable/ic_media_previous"
-        android:tint="@android:color/white"
+        android:background="@drawable/bg_back_button_transparent"
+        android:src="@drawable/ic_arrow_back"
+        android:padding="10dp"
         android:contentDescription="Back"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- ✅ ปุ่มสลับกล้อง (ขวาบน) -->
     <ImageButton
         android:id="@+id/btnSwitchCamera"
         android:layout_width="44dp"
@@ -48,7 +45,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- debug panel -->
     <TextView
         android:id="@+id/txtDebug"
         android:layout_width="0dp"
@@ -65,7 +61,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- bubble -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bubbleCard"
         android:layout_width="wrap_content"
@@ -95,12 +90,11 @@
             android:ellipsize="end"/>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- ปุ่ม Start/Stop (กลางล่าง) -->
     <FrameLayout
         android:id="@+id/btnToggle"
         android:layout_width="72dp"
         android:layout_height="72dp"
-        android:background="@drawable/bg_play_gradient"
+        android:background="@drawable/bg_camera_red_gradient"
         android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

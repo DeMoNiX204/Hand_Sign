@@ -7,5 +7,6 @@
   "camera_permission_denied": "ไม่ได้รับสิทธิ์กล้อง",
   "fever": "ไข้",
   "feverish": "รู้สึกร้อนๆหนาวๆ",
-  "wounded": "บาดเจ็บ"
+  "wounded": "บาดเจ็บ",
+  "no_action": "ไม่มีการกระทำ"
 }
