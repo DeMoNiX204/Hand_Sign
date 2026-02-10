@@ -28,7 +28,9 @@ class CameraActivity : AppCompatActivity() {
 
     // ===== Camera config =====
     private val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-    private val mirrorX = false // กล้องหลังไม่กลับด้าน
+
+    // 🔥 1. ตั้งค่า mirrorX = true เพื่อจำลองการ flip แบบ Python
+    private val mirrorX = true
 
     private var cameraProvider: ProcessCameraProvider? = null
     // ใช้ Executor แบบนี้ปลอดภัยกว่า
@@ -53,6 +55,10 @@ class CameraActivity : AppCompatActivity() {
     private var agg: PredictionAggregator? = null
 
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
+
+    // 🔥 2. เพิ่มตัวแปรสำหรับ EMA Smoothing
+    private var prevProbs: FloatArray? = null
+    private val alphaEMA = 0.2f // ค่า Alpha 0.2 (ตรงกับ Python)
 
     private val askCamera = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -143,6 +149,7 @@ class CameraActivity : AppCompatActivity() {
         isRunning = true
         seq.reset()
         agg?.reset()
+        prevProbs = null // รีเซ็ต EMA เมื่อเริ่มใหม่
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
         setStatusState(i18nSafe("detecting", "กำลังจับท่า..."))
     }
@@ -198,7 +205,21 @@ class CameraActivity : AppCompatActivity() {
         seq.add(frame)
         if (!seq.isFull()) return
 
-        val probs = classifier?.predict(seq.toFlatFloatArray()) ?: return
+        // 1. ได้ค่าดิบ (Raw Probabilities)
+        val rawProbs = classifier?.predict(seq.toFlatFloatArray()) ?: return
+
+        // 🔥 3. คำนวณ EMA Smoothing (เพื่อให้ค่านิ่งเท่า Python)
+        val probs = if (prevProbs == null) {
+            rawProbs
+        } else {
+            FloatArray(rawProbs.size) { i ->
+                // สูตร: smoothed = alpha * new + (1-alpha) * old
+                alphaEMA * rawProbs[i] + (1f - alphaEMA) * prevProbs!![i]
+            }
+        }
+        prevProbs = probs // จำค่าไว้ใช้รอบหน้า
+
+        // 4. ใช้ค่า probs ที่ Smooth แล้วไปคำนวณต่อ
         val top = top1top2(probs)
         val key = labelMap!![top.topIdx]
 
@@ -253,6 +274,7 @@ class CameraActivity : AppCompatActivity() {
             cameraProvider = providerFuture.get()
             bindUseCases()
         }, ContextCompat.getMainExecutor(this))
+
     }
 
     private fun bindUseCases() {
@@ -263,6 +285,7 @@ class CameraActivity : AppCompatActivity() {
         preview.setSurfaceProvider(previewView.surfaceProvider)
 
         val analysis = ImageAnalysis.Builder()
+            .setTargetResolution(Size(720, 1280))
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
@@ -271,6 +294,8 @@ class CameraActivity : AppCompatActivity() {
         if (r != null) {
             analysis.setAnalyzer(cameraExecutor, HolisticFrameAnalyzer({ true }, r))
         }
+
+
 
         provider.unbindAll()
         provider.bindToLifecycle(this, cameraSelector, preview, analysis)

@@ -9,8 +9,8 @@ plugins {
  * และกัน protobuf-javalite ไม่ให้เข้ามาชน
  */
 configurations.configureEach {
-    exclude(group = "com.google.protobuf", module = "protobuf-javalite")
-    resolutionStrategy.force("com.google.protobuf:protobuf-java:3.25.3")
+    exclude(group = "com.google.protobuf", module = "protobuf-java")
+//    resolutionStrategy.force("com.google.protobuf:protobuf-java:3.25.3")
 }
 
 android {
@@ -74,11 +74,12 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
-    // MediaPipe Tasks Vision (HolisticLandmarker)
-    implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
+    // 1. แก้ส่วน MediaPipe ให้เป็นแบบนี้
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    implementation("com.google.protobuf:protobuf-javalite:3.19.4") // ใช้ตัว Lite เท่านั้น
 
     // LiteRT (Interpreter API) สำหรับรัน model_fp32_v5.tflite
-    implementation("com.google.ai.edge.litert:litert:1.4.1")
+    implementation("com.google.ai.edge.litert:litert:1.0.1")
 
     // ✅ บังคับ protobuf-java ตัวเต็ม (ให้ชัดไปเลย)
     implementation("com.google.protobuf:protobuf-java:3.25.3")

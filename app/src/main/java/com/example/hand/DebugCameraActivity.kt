@@ -35,6 +35,10 @@ class DebugCameraActivity : AppCompatActivity() {
         get() = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     private var cameraProvider: ProcessCameraProvider? = null
 
+    // 🔥 1. กำหนด mirrorX = true เพื่อให้พิกัดตรงกับ Python (ทั้งหน้าและหลัง)
+    // ลองเปลี่ยนเป็น true/false ดูถ้าค่ามันกลับด้าน
+    private val mirrorX = true
+
     // UI
     private lateinit var previewView: PreviewView
     private lateinit var txtResult: TextView
@@ -56,6 +60,10 @@ class DebugCameraActivity : AppCompatActivity() {
 
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
     private var seqCount = 0
+
+    // 🔥 2. เพิ่มตัวแปรสำหรับ EMA Smoothing
+    private var prevProbs: FloatArray? = null
+    private val alphaEMA = 0.2f
 
     // Stats
     private var fpsStartTs = 0L
@@ -130,7 +138,8 @@ class DebugCameraActivity : AppCompatActivity() {
         }
 
         try {
-            runner = HolisticLandmarkerRunner(this, ModelConfig.HOLISTIC_TASK, false,
+            // 🔥 ส่ง mirrorX เข้าไปที่ Runner
+            runner = HolisticLandmarkerRunner(this, ModelConfig.HOLISTIC_TASK, mirrorX,
                 onResult = { r -> onHolisticResult(r) },
                 onError = { setStatus("❌ ML Error: $it") }
             )
@@ -139,6 +148,7 @@ class DebugCameraActivity : AppCompatActivity() {
             return
         }
 
+        // ปุ่ม Start
         btnToggle.setOnClickListener { if (!isRunning) startRun() else stopRun(true) }
 
         setStatus("✅ พร้อม (กด Play)")
@@ -150,6 +160,7 @@ class DebugCameraActivity : AppCompatActivity() {
         seq.reset()
         seqCount = 0
         agg?.reset()
+        prevProbs = null // รีเซ็ต EMA
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
         fpsStartTs = SystemClock.elapsedRealtime()
         fpsFrames = 0
@@ -179,40 +190,55 @@ class DebugCameraActivity : AppCompatActivity() {
             fpsStartTs = now
         }
 
-        // --- เตรียมตัวแปรสำหรับ Debug ---
         var top: Top2? = null
         var pass = false
         var usedLabel: String? = null
         var usedTau: Float? = null
         var usedDelta: Float? = null
 
+        // 1. เช็คว่าเจอคนไหม
         val personOk = hasPerson(result)
         val armsOk = hasBothArms(result)
 
-        if (!isRunning) {
-            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
+        // 🔥 2. เช็คว่าเจอมือไหม (นี่คือจุดสำคัญ!)
+        val lhCount = result.leftHandLandmarks().size
+        val rhCount = result.rightHandLandmarks().size
+
+        // ถ้าไม่ได้กด Start หรือคนไม่ครบ ก็ให้อัปเดตหน้าจอ Debug ด้วย
+        if (!isRunning || !personOk || !armsOk) {
+            val statusMsg = if (!personOk) "ไม่พบคน" else if (!armsOk) "เห็นแขนไม่ครบ" else null
+            if (statusMsg != null) setStatus(statusMsg)
+
+            // ส่งจำนวนมือไปแสดงผลด้วย
+            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta, null, lhCount, rhCount)
             return
         }
 
-        if (!personOk) {
-            setStatus("ไม่พบคน")
-            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
-            return
-        }
-
-        if (!armsOk) {
-            setStatus("เห็นแขนไม่ครบ")
-            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
-            return
-        }
-
+        // 3. สกัด Feature
         val frame = Holistic258Extractor.extract(result)
+
+        // สร้าง String 5 ตัวแรกเพื่อดู Debug
+        val dataStr = frame.take(5).joinToString(", ") { f2(it) }
+        android.util.Log.d("MP_DEBUG", "Frame: $dataStr | L:$lhCount R:$rhCount")
+
+        // 4. เข้า Buffer
         seq.add(frame)
         seqCount = min(seqCount + 1, ModelConfig.SEQ_T)
 
         if (seq.isFull()) {
-            val probs = classifier?.predict(seq.toFlatFloatArray())
-            if (probs != null && labelMap != null) {
+            val rawProbs = classifier?.predict(seq.toFlatFloatArray())
+            if (rawProbs != null && labelMap != null) {
+
+                // EMA Smoothing
+                val probs = if (prevProbs == null) {
+                    rawProbs
+                } else {
+                    FloatArray(rawProbs.size) { i ->
+                        alphaEMA * rawProbs[i] + (1f - alphaEMA) * prevProbs!![i]
+                    }
+                }
+                prevProbs = probs
+
                 top = top1top2(probs)
                 val key = labelMap!![top.topIdx]
 
@@ -234,11 +260,14 @@ class DebugCameraActivity : AppCompatActivity() {
                     setStatus("${i18n.t(key)} (${f2(top.topScore)})")
                 }
             }
+
+            // ส่งข้อมูลไปแสดงผล (รวมถึงจำนวนมือ)
+            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta, dataStr, lhCount, rhCount)
+
         } else {
             setStatus("เก็บข้อมูล... $seqCount/30")
+            maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta, dataStr, lhCount, rhCount)
         }
-
-        maybeUpdateDebug(now, personOk, armsOk, seqCount, top, pass, usedLabel, usedTau, usedDelta)
     }
 
     private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
@@ -270,37 +299,46 @@ class DebugCameraActivity : AppCompatActivity() {
         return leftOk && rightOk
     }
 
+    // ฟังก์ชันอัปเดต UI พร้อมพารามิเตอร์ dataStr
     private fun maybeUpdateDebug(
         now: Long, personOk: Boolean, armsOk: Boolean, seqC: Int,
         top: Top2?, pass: Boolean,
-        label: String?, tau: Float?, delta: Float?
+        label: String?, tau: Float?, delta: Float?,
+        dataStr: String? = null,
+        lhCount: Int = 0, rhCount: Int = 0 // รับค่าจำนวนมือ
     ) {
         if (now - lastUiTs < 100) return
         lastUiTs = now
 
         val sb = StringBuilder()
-        sb.appendLine("FPS: ${f1(fps)}")
-        sb.appendLine("Mode: ${if(lensFacing==CameraSelector.LENS_FACING_BACK)"Back" else "Front"}")
-        sb.appendLine("Gate: Person=${if(personOk)"✅" else "❌"} Arms=${if(armsOk)"✅" else "❌"}")
-        sb.appendLine("Buffer: $seqC / 30")
+        sb.append("FPS: ${f1(fps)} | Buf: $seqC/30\n")
+
+        // 🔥 แสดงสถานะมือซ้าย/ขวา
+        // ถ้าเป็น 0 แปลว่าไม่เจอมือ (กากบาท), ถ้ามากกว่า 0 แปลว่าเจอ (ติ๊กถูก)
+        val lIcon = if (lhCount > 0) "✅" else "❌"
+        val rIcon = if (rhCount > 0) "✅" else "❌"
+        sb.append("Hands: L$lIcon R$rIcon\n")
+
+        if (dataStr != null) {
+            sb.append("Data: $dataStr\n")
+        }
+        sb.append("----------------\n")
 
         if (top != null && labelMap != null) {
             val k1 = labelMap!![top.topIdx]
+            val sc1 = (top.topScore * 100).toInt()
             val k2 = labelMap!![top.secondIdx]
+            val sc2 = (top.secondScore * 100).toInt()
 
-            sb.appendLine("-----------------------")
-            sb.appendLine("1) ${i18n.t(k1)} (${f2(top.topScore)})")
-            sb.appendLine("2) ${i18n.t(k2)} (${f2(top.secondScore)})")
+            sb.append("1) ${i18n.t(k1)} ($sc1%)\n")
+            if (sc2 > 1) sb.append("2) ${i18n.t(k2)} ($sc2%)\n")
 
             if (label != null && tau != null && delta != null) {
-                sb.appendLine("Rule: $label (t=${f2(tau)}, d=${f2(delta)})")
+                val pStr = if (pass) "Pass" else "Wait"
+                sb.append("Rule: $label ($pStr)")
             }
-
-            val diff = top.topScore - top.secondScore
-            sb.appendLine("Diff: ${f2(diff)}  Pass: $pass")
         } else {
-            sb.appendLine("-----------------------")
-            sb.appendLine("Wait for prediction...")
+            sb.append("Scanning...")
         }
 
         setDebug(sb.toString())
@@ -329,13 +367,15 @@ class DebugCameraActivity : AppCompatActivity() {
 
     private fun bindUseCases() {
         val provider = cameraProvider ?: return
-        val isFront = (lensFacing == CameraSelector.LENS_FACING_FRONT)
-        try { Holistic258Extractor.setMirror(isFront) } catch(_:Throwable){}
+
+        // 🔥 เปลี่ยนจาก isFront เป็น mirrorX เพื่อบังคับ Mirror ตาม Python
+        try { Holistic258Extractor.setMirror(mirrorX) } catch(_:Throwable){}
 
         val preview = Preview.Builder().build()
         preview.setSurfaceProvider(previewView.surfaceProvider)
 
         val analysis = ImageAnalysis.Builder()
+            .setTargetResolution(Size(720, 1280))
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
@@ -355,6 +395,7 @@ class DebugCameraActivity : AppCompatActivity() {
             if (p.hasCamera(CameraSelector.Builder().requireLensFacing(newLens).build())) {
                 lensFacing = newLens
                 seq.reset(); seqCount = 0
+                prevProbs = null // รีเซ็ต EMA เมื่อสลับกล้อง
                 bindUseCases()
             }
         } catch(_:Throwable){}
@@ -367,18 +408,11 @@ class DebugCameraActivity : AppCompatActivity() {
     private fun f1(x: Float) = String.format(Locale.US, "%.1f", x)
     private fun f2(x: Float) = String.format(Locale.US, "%.2f", x)
 
-    // แก้ไขในไฟล์ DebugCameraActivity.kt
     override fun onDestroy() {
-        // 1. หยุดรับภาพจากกล้องก่อนเป็นอันดับแรก (สำคัญ)
         try { cameraProvider?.unbindAll() } catch (_: Throwable) {}
-
-        // 2. ปิด Thread
         cameraExecutor.shutdown()
-
-        // 3. ปิด Model (ใส่ try-catch กันพลาด)
         try { runner?.close() } catch (_: Throwable) {}
         try { classifier?.close() } catch (_: Throwable) {}
-
         super.onDestroy()
     }
 }

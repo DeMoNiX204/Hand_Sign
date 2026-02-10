@@ -29,10 +29,12 @@
         <!-- ✅ หน้ากล้อง -->
         <activity
             android:name=".CameraActivity"
-            android:exported="false" />
+            android:exported="true"
+            android:screenOrientation="portrait"  android:theme="@style/Theme.Hand"/>
         <activity
             android:name=".DebugCameraActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait"  android:theme="@style/Theme.Hand"/>
     </application>
 
 </manifest>
