@@ -1,7 +1,9 @@
 {
   "ready_press_play": "✅ พร้อม (กดปุ่มเล่น)",
   "detecting": "กำลังจับท่า...",
+  "need_both_arms": "เห็นแขนไม่ครบ",
   "no_person": "ไม่พบคน",
+  "not_sure": "ยังไม่มั่นใจ ลองใหม่",
   "stopped": "หยุดแล้ว",
   "summary": "ผลสรุป",
   "camera_permission_denied": "ไม่ได้รับสิทธิ์กล้อง",

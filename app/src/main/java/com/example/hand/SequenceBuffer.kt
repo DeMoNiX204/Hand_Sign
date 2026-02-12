@@ -2,11 +2,11 @@ package com.example.hand
 
 class SequenceBuffer(private val seqLen: Int, private val featDim: Int) {
     private val frames = Array(seqLen) { FloatArray(featDim) }
-    private var size = 0
+    private var count = 0
     private var writeIdx = 0
 
     fun reset() {
-        size = 0
+        count = 0
         writeIdx = 0
     }
 
@@ -14,14 +14,14 @@ class SequenceBuffer(private val seqLen: Int, private val featDim: Int) {
         require(frame.size == featDim)
         frame.copyInto(frames[writeIdx])
         writeIdx = (writeIdx + 1) % seqLen
-        if (size < seqLen) size++
+        if (count < seqLen) count++
     }
 
-    fun isFull(): Boolean = size >= seqLen
+    fun isFull(): Boolean = count >= seqLen
 
     fun toFlatFloatArray(): FloatArray {
         val out = FloatArray(seqLen * featDim)
-        val start = if (size < seqLen) 0 else writeIdx // oldest
+        val start = if (count < seqLen) 0 else writeIdx // oldest
         var k = 0
         for (i in 0 until seqLen) {
             val idx = (start + i) % seqLen
