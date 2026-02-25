@@ -17,60 +17,62 @@
 
     <ImageButton
         android:id="@+id/btnBack"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:background="@drawable/bg_back_button_transparent"
         android:src="@drawable/ic_arrow_back"
-        android:padding="10dp"
-        android:contentDescription="Back"
-        android:clickable="true"
-        android:focusable="true"
+        android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
     <ImageButton
         android:id="@+id/btnSwitchCamera"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="14dp"
-        android:background="@android:color/transparent"
-        android:src="@android:drawable/ic_menu_camera"
-        android:tint="@android:color/white"
-        android:contentDescription="Switch camera"
-        android:clickable="true"
-        android:focusable="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_back_button_transparent"
+        android:src="@drawable/ic_cameraswitch"
+        android:padding="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <TextView
-        android:id="@+id/txtDebug"
+    <ScrollView
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:layout_marginTop="64dp"
-        android:background="#66000000"
-        android:textColor="@android:color/white"
-        android:textSize="12sp"
-        android:padding="10dp"
-        android:typeface="monospace"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_height="0dp"
+        android:background="#B3000000"
+        android:padding="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/btnBack"
+        app:layout_constraintBottom_toTopOf="@+id/cardResult"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/txtDebug"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Waiting for Data..."
+            android:textColor="#00FF00"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace" />
+    </ScrollView>
 
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/bubbleCard"
+        android:id="@+id/cardResult"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="94dp"
-        app:cardCornerRadius="18dp"
-        app:cardElevation="8dp"
-        app:cardUseCompatPadding="true"
-        app:cardBackgroundColor="#66000000"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="#CC000000"
+        app:cardCornerRadius="24dp"
+        app:strokeWidth="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnToggle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -79,34 +81,30 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="พร้อม"
-            android:textSize="18sp"
+            android:textSize="24sp"
+            android:textStyle="bold"
             android:textColor="@android:color/white"
-            android:paddingLeft="14dp"
-            android:paddingRight="14dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:maxWidth="280dp"
-            android:maxLines="2"
-            android:ellipsize="end"/>
+            android:padding="20dp"
+            android:gravity="center"/>
     </com.google.android.material.card.MaterialCardView>
 
     <FrameLayout
         android:id="@+id/btnToggle"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:background="@drawable/bg_camera_red_gradient"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
             android:id="@+id/imgToggle"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:layout_gravity="center"
             android:src="@android:drawable/ic_media_play"
-            android:tint="@android:color/white"/>
+            app:tint="@android:color/white" />
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

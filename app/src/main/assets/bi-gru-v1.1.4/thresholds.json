@@ -1,0 +1,34 @@
+{
+    "diarrhea": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "distention": {
+        "tau": 0.33999999999999997,
+        "delta": 1.0
+    },
+    "fed_up_with_food": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "fever": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "feverish": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "insomnia": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "no_action": {
+        "tau": 0.3,
+        "delta": 1.0
+    },
+    "wounded": {
+        "tau": 0.3,
+        "delta": 1.0
+    }
+}

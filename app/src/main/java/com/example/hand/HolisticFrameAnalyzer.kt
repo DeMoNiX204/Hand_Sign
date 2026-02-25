@@ -22,29 +22,31 @@ class HolisticFrameAnalyzer(
 
         try {
             val plane = image.planes[0]
-            val width = image.width
+            val width  = image.width
             val height = image.height
 
             val rgba = packRgba(
-                src = plane.buffer,
-                width = width,
-                height = height,
-                rowStride = plane.rowStride,
+                src         = plane.buffer,
+                width       = width,
+                height      = height,
+                rowStride   = plane.rowStride,
                 pixelStride = plane.pixelStride
             )
 
-            val rotationDeg = image.imageInfo.rotationDegrees
-
             val now = SystemClock.uptimeMillis()
-            val ts = max(now, lastTs + 1)
-            lastTs = ts
+            val ts  = max(now, lastTs + 1)
+            lastTs  = ts
 
+            // ✅ ส่ง rotationDegrees = 0 เสมอ
+            // Python: cv2.flip(frame,1) แล้วส่งตรงๆ ไม่มี rotation
+            // ถ้าเราส่ง rotationDegrees จริง (เช่น 90) MediaPipe จะ rotate พิกัด
+            // ทำให้ X,Y สลับกัน ไม่ตรงกับ Python
             runner.detectAsync(
-                rgbaBuffer = rgba,
-                width = width,
-                height = height,
-                rotationDegrees = rotationDeg,
-                timestampMs = ts
+                rgbaBuffer     = rgba,
+                width          = width,
+                height         = height,
+                rotationDegrees = 0,
+                timestampMs    = ts
             )
         } finally {
             image.close()
@@ -62,8 +64,8 @@ class HolisticFrameAnalyzer(
             .order(ByteOrder.nativeOrder())
 
         val rowBytes = width * pixelStride
-        val tmp = ByteArray(rowBytes)
-        val buf = src.duplicate()
+        val tmp      = ByteArray(rowBytes)
+        val buf      = src.duplicate()
 
         for (y in 0 until height) {
             buf.position(y * rowStride)

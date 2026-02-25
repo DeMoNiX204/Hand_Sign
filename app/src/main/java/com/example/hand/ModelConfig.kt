@@ -5,7 +5,7 @@ object ModelConfig {
     // =========================
     // ✅ เปลี่ยนโมเดล “แก้ที่นี่ที่เดียว”
     // =========================
-    const val MODEL_DIR = "bi-gru-v1.1"
+    const val MODEL_DIR = "bi-gru-v1.2.1"
     const val TFLITE_NAME = "model_fp16.tflite"
     const val LABELS_NAME = "label_map.json"
     const val THRESH_NAME = "thresholds.json"
@@ -22,7 +22,7 @@ object ModelConfig {
     // =========================================================
 
     // 1) count (จำนวนครั้งที่ผ่านแล้วถูกนับเข้าคลาสนั้น)
-    const val MIN_COUNT_TO_ACCEPT = 6
+    const val MIN_COUNT_TO_ACCEPT = 3
     const val MAX_COUNT_TO_ACCEPT = Int.MAX_VALUE
 
     // 2) sum (ผลรวมคะแนนของคลาสนั้น)

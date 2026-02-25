@@ -148,6 +148,7 @@ class CameraActivity : AppCompatActivity() {
     private fun startRun() {
         isRunning = true
         seq.reset()
+        Holistic258Extractor.reset()
         agg?.reset()
         prevProbs = null // รีเซ็ต EMA เมื่อเริ่มใหม่
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
@@ -167,13 +168,14 @@ class CameraActivity : AppCompatActivity() {
         val a = agg ?: return
         val noActionIdx = findLabelIndex(lm, "no_action")
 
+        // 🔥🔥 แก้ไขจุดที่ 1: Hardcode ค่า minCount ให้ต่ำลง (3) เพื่อให้สรุปผลง่ายขึ้น
         val best = a.bestResultExclude(
             excludeIdx = noActionIdx,
-            minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
+            minCount = 3, // บังคับใช้ 3 เฟรม (แทน ModelConfig.MIN_COUNT_TO_ACCEPT)
             maxCount = ModelConfig.MAX_COUNT_TO_ACCEPT,
-            minSum = ModelConfig.MIN_SUM_TO_ACCEPT,
+            minSum = 0.1f, // ลดเกณฑ์ผลรวมคะแนนลงด้วย
             maxSum = ModelConfig.MAX_SUM_TO_ACCEPT,
-            minAvg = ModelConfig.MIN_AVG_SCORE_TO_ACCEPT,
+            minAvg = 0.2f, // ลดเกณฑ์ค่าเฉลี่ยลงด้วย
             maxAvg = ModelConfig.MAX_AVG_SCORE_TO_ACCEPT
         )
 
@@ -224,8 +226,13 @@ class CameraActivity : AppCompatActivity() {
         val key = labelMap!![top.topIdx]
 
         val rule = thr.forLabel(key)
-        val diff = top.topScore - top.secondScore
-        val pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
+
+        // 🔥🔥 แก้ไขจุดที่ 2: ปรับ Logic การ Pass ให้ง่ายขึ้นสำหรับ Model ใหม่
+        // 1. ถ้าใน JSON ตั้ง Tau ไว้สูงกว่า 0.6 ให้ใช้แค่ 0.6 พอ (Capping Threshold)
+        val effectiveTau = if (rule.tau > 0.6f) 0.6f else rule.tau
+
+        // 2. ตัดเงื่อนไข Delta (diff) ออก หรือลดความสำคัญลง เพื่อให้ท่าที่คะแนนใกล้เคียงกันไม่โดนตัดทิ้ง
+        val pass = (top.topScore >= effectiveTau)
 
         if (pass && key != "no_action") {
             agg?.add(top.topIdx, top.topScore)
@@ -294,8 +301,6 @@ class CameraActivity : AppCompatActivity() {
         if (r != null) {
             analysis.setAnalyzer(cameraExecutor, HolisticFrameAnalyzer({ true }, r))
         }
-
-
 
         provider.unbindAll()
         provider.bindToLifecycle(this, cameraSelector, preview, analysis)
