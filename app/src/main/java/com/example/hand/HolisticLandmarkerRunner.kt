@@ -13,7 +13,6 @@ import java.nio.ByteBuffer
 class HolisticLandmarkerRunner(
     context: Context,
     modelAssetName: String,
-    private val mirrorX: Boolean,
     private val onResult: (HolisticLandmarkerResult) -> Unit,
     private val onError: (String) -> Unit
 ) : AutoCloseable {
@@ -48,7 +47,6 @@ class HolisticLandmarkerRunner(
             .build()
 
         landmarker = HolisticLandmarker.createFromOptions(context, options)
-        Holistic258Extractor.setMirror(mirrorX)
     }
 
     fun detectAsync(

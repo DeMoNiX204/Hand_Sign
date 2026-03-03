@@ -139,7 +139,7 @@
     
             try {
                 // 🔥 ส่ง mirrorX เข้าไปที่ Runner
-                runner = HolisticLandmarkerRunner(this, ModelConfig.HOLISTIC_TASK, mirrorX,
+                runner = HolisticLandmarkerRunner(this, ModelConfig.HOLISTIC_TASK,
                     onResult = { r -> onHolisticResult(r) },
                     onError = { setStatus("❌ ML Error: $it") }
                 )
@@ -174,7 +174,7 @@
             if (!showSummary) { setStatus("หยุด"); return }
     
             val lm = labelMap ?: return
-            val best = agg?.bestResultExclude(null, 0, Int.MAX_VALUE, 0f, Float.MAX_VALUE, 0f, Float.MAX_VALUE)
+            val best = agg?.bestResultExclude(null, 0, 0f, 0f)
             if (best != null) {
                 setStatus("ผลสรุป: ${i18n.t(lm[best.idx])}")
             } else {
@@ -373,10 +373,7 @@
     
         private fun bindUseCases() {
             val provider = cameraProvider ?: return
-    
-            // 🔥 เปลี่ยนจาก isFront เป็น mirrorX เพื่อบังคับ Mirror ตาม Python
-            try { Holistic258Extractor.setMirror(mirrorX) } catch(_:Throwable){}
-    
+
             val preview = Preview.Builder().build()
             preview.setSurfaceProvider(previewView.surfaceProvider)
     

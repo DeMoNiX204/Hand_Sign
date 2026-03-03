@@ -1,12 +1,4 @@
 {
-  "ready_press_play": "✅ พร้อม (กดปุ่มเล่น)",
-  "detecting": "กำลังจับท่า...",
-  "need_both_arms": "เห็นแขนไม่ครบ",
-  "no_person": "ไม่พบคน",
-  "not_sure": "ยังไม่มั่นใจ ลองใหม่",
-  "stopped": "หยุดแล้ว",
-  "summary": "ผลสรุป",
-  "camera_permission_denied": "ไม่ได้รับสิทธิ์กล้อง",
   "fever": "ไข้",
   "feverish": "รู้สึกร้อนๆหนาวๆ",
   "wounded": "บาดเจ็บ",
@@ -17,6 +9,5 @@
   "itching": "อาการคัน",
   "pain": "เจ็บ",
   "polyuria": "ปัสสาวะบ่อย ",
-  "suffocated": "แน่นหน้าอก ",
-  "no_action": "ไม่มีการกระทำ"
+  "suffocated": "แน่นหน้าอก "
 }

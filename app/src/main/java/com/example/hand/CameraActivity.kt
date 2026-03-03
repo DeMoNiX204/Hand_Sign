@@ -29,9 +29,6 @@ class CameraActivity : AppCompatActivity() {
     // ===== Camera config =====
     private val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-    // 🔥 1. ตั้งค่า mirrorX = true เพื่อจำลองการ flip แบบ Python
-    private val mirrorX = true
-
     private var cameraProvider: ProcessCameraProvider? = null
     // ใช้ Executor แบบนี้ปลอดภัยกว่า
     private val cameraExecutor = Executors.newSingleThreadExecutor()
@@ -127,7 +124,6 @@ class CameraActivity : AppCompatActivity() {
             runner = HolisticLandmarkerRunner(
                 context = this,
                 modelAssetName = ModelConfig.HOLISTIC_TASK,
-                mirrorX = mirrorX,
                 onResult = { r -> onHolisticResult(r) },
                 onError = { msg -> setStatusState("❌ ML Error: $msg") }
             )
@@ -141,7 +137,7 @@ class CameraActivity : AppCompatActivity() {
             if (!isRunning) startRun() else stopRun(showSummary = true)
         }
 
-        setStatusState(i18nSafe("ready_press_play", "✅ พร้อม (กดปุ่มเล่น)"))
+        setStatusState("✅ พร้อม (กดปุ่มเล่น)")
         askCamera.launch(Manifest.permission.CAMERA)
     }
 
@@ -152,7 +148,7 @@ class CameraActivity : AppCompatActivity() {
         agg?.reset()
         prevProbs = null // รีเซ็ต EMA เมื่อเริ่มใหม่
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
-        setStatusState(i18nSafe("detecting", "กำลังจับท่า..."))
+        setStatusState("กำลังจับท่า...")
     }
 
     private fun stopRun(showSummary: Boolean) {
@@ -160,7 +156,7 @@ class CameraActivity : AppCompatActivity() {
         imgToggle.setImageResource(android.R.drawable.ic_media_play)
 
         if (!showSummary) {
-            setStatusState(i18nSafe("stopped", "หยุดแล้ว"))
+            setStatusState("หยุดแล้ว")
             return
         }
 
@@ -172,18 +168,15 @@ class CameraActivity : AppCompatActivity() {
         val best = a.bestResultExclude(
             excludeIdx = noActionIdx,
             minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
-            maxCount = ModelConfig.MAX_COUNT_TO_ACCEPT,
             minSum = ModelConfig.MIN_SUM_TO_ACCEPT,
-            maxSum = ModelConfig.MAX_SUM_TO_ACCEPT,
-            minAvg = ModelConfig.MIN_AVG_SCORE_TO_ACCEPT,
-            maxAvg = ModelConfig.MAX_AVG_SCORE_TO_ACCEPT
+            minAvg = ModelConfig.MIN_AVG_SCORE_TO_ACCEPT
         )
 
         if (best == null) {
-            setStatusState(i18nSafe("not_sure", "ยังไม่มั่นใจ ลองใหม่"))
+            setStatusState("ยังไม่มั่นใจ ลองใหม่")
         } else {
             val key = lm[best.idx]
-            setStatusState("${i18nSafe("summary", "ผลลัพธ์")}: ${i18n.t(key)}")
+            setStatusState("${"ผลลัพธ์"}: ${i18n.t(key)}")
         }
     }
 
@@ -193,15 +186,15 @@ class CameraActivity : AppCompatActivity() {
         if (labelMap == null || classifier == null) return
 
         if (!hasPerson(result)) {
-            setStatusState(i18nSafe("no_person", "ไม่พบคน"))
+            setStatusState("ไม่พบคน")
             return
         }
         if (!hasBothArms(result)) {
-            setStatusState(i18nSafe("need_both_arms", "เห็นแขนไม่ครบ"))
+            setStatusState("เห็นแขนไม่ครบ")
             return
         }
 
-        setStatusState(i18nSafe("detecting", "กำลังจับท่า..."))
+        setStatusState("กำลังจับท่า...")
 
         val frame = Holistic258Extractor.extract(result)
         seq.add(frame)
@@ -284,7 +277,6 @@ class CameraActivity : AppCompatActivity() {
 
     private fun bindUseCases() {
         val provider = cameraProvider ?: return
-        try { Holistic258Extractor.setMirror(mirrorX) } catch (_: Throwable) {}
 
         val preview = Preview.Builder().build()
         preview.setSurfaceProvider(previewView.surfaceProvider)
@@ -310,9 +302,6 @@ class CameraActivity : AppCompatActivity() {
         if (::txtResult.isInitialized) runOnUiThread { txtResult.text = msg }
     }
 
-    private fun i18nSafe(key: String, fallback: String): String {
-        return if (::i18n.isInitialized) i18n.t(key) else fallback
-    }
 
     private fun assetExists(n: String) = try { assets.open(n).close(); true } catch (_: Throwable) { false }
 

@@ -25,35 +25,12 @@ class PredictionAggregator(private val numClasses: Int) {
         sums[idx] += score
     }
 
-    // เดิม: เลือก best จากทุกคลาส
-    fun bestResult(
-        minCount: Int,
-        maxCount: Int,
-        minSum: Float,
-        maxSum: Float,
-        minAvg: Float,
-        maxAvg: Float
-    ): AggBest? {
-        return bestResultExclude(
-            excludeIdx = null,
-            minCount = minCount,
-            maxCount = maxCount,
-            minSum = minSum,
-            maxSum = maxSum,
-            minAvg = minAvg,
-            maxAvg = maxAvg
-        )
-    }
-
     // ✅ ใหม่: แบบ A — ไม่ให้บางคลาสชนะ (เช่น no_action)
     fun bestResultExclude(
         excludeIdx: Int?,
         minCount: Int,
-        maxCount: Int,
         minSum: Float,
-        maxSum: Float,
         minAvg: Float,
-        maxAvg: Float
     ): AggBest? {
 
         var best: AggBest? = null
@@ -68,9 +45,9 @@ class PredictionAggregator(private val numClasses: Int) {
             val avg = s / c.toFloat()
 
             // ✅ กรองก่อนเลือก
-            if (c < minCount || c > maxCount) continue
-            if (s < minSum || s > maxSum) continue
-            if (avg < minAvg || avg > maxAvg) continue
+            if (c < minCount) continue
+            if (s < minSum) continue
+            if (avg < minAvg) continue
 
             if (best == null || c > best!!.count || (c == best!!.count && s > best!!.sum)) {
                 best = AggBest(i, c, s, avg)

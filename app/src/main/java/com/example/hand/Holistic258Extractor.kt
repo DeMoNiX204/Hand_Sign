@@ -28,7 +28,6 @@ object Holistic258Extractor {
         prevLeftHand = FloatArray(63)
     }
 
-    fun setMirror(mirror: Boolean) { }
 
     fun extract(r: HolisticLandmarkerResult): FloatArray {
         val out = FloatArray(258)
