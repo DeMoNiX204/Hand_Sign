@@ -26,11 +26,11 @@ object ModelConfig {
     const val MAX_COUNT_TO_ACCEPT = Int.MAX_VALUE
 
     // 2) sum (ผลรวมคะแนนของคลาสนั้น)
-    const val MIN_SUM_TO_ACCEPT = 0.3f
+    const val MIN_SUM_TO_ACCEPT = 0.5f
     const val MAX_SUM_TO_ACCEPT = Float.POSITIVE_INFINITY
 
     // 3) avg (ค่าเฉลี่ย = sum / count)
-    const val MIN_AVG_SCORE_TO_ACCEPT = 0.35f
+    const val MIN_AVG_SCORE_TO_ACCEPT = 0.5f
     const val MAX_AVG_SCORE_TO_ACCEPT = Float.POSITIVE_INFINITY
 
     // assets paths (Activity จะเรียกใช้อันนี้)

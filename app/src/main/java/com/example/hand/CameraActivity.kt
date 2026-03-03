@@ -171,11 +171,11 @@ class CameraActivity : AppCompatActivity() {
         // 🔥🔥 แก้ไขจุดที่ 1: Hardcode ค่า minCount ให้ต่ำลง (3) เพื่อให้สรุปผลง่ายขึ้น
         val best = a.bestResultExclude(
             excludeIdx = noActionIdx,
-            minCount = 3, // บังคับใช้ 3 เฟรม (แทน ModelConfig.MIN_COUNT_TO_ACCEPT)
+            minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
             maxCount = ModelConfig.MAX_COUNT_TO_ACCEPT,
-            minSum = 0.1f, // ลดเกณฑ์ผลรวมคะแนนลงด้วย
+            minSum = ModelConfig.MIN_SUM_TO_ACCEPT,
             maxSum = ModelConfig.MAX_SUM_TO_ACCEPT,
-            minAvg = 0.2f, // ลดเกณฑ์ค่าเฉลี่ยลงด้วย
+            minAvg = ModelConfig.MIN_AVG_SCORE_TO_ACCEPT,
             maxAvg = ModelConfig.MAX_AVG_SCORE_TO_ACCEPT
         )
 
@@ -227,12 +227,10 @@ class CameraActivity : AppCompatActivity() {
 
         val rule = thr.forLabel(key)
 
-        // 🔥🔥 แก้ไขจุดที่ 2: ปรับ Logic การ Pass ให้ง่ายขึ้นสำหรับ Model ใหม่
-        // 1. ถ้าใน JSON ตั้ง Tau ไว้สูงกว่า 0.6 ให้ใช้แค่ 0.6 พอ (Capping Threshold)
-        val effectiveTau = if (rule.tau > 0.6f) 0.6f else rule.tau
-
-        // 2. ตัดเงื่อนไข Delta (diff) ออก หรือลดความสำคัญลง เพื่อให้ท่าที่คะแนนใกล้เคียงกันไม่โดนตัดทิ้ง
-        val pass = (top.topScore >= effectiveTau)
+        // คำนวณความห่างคะแนนอันดับ 1 กับอันดับ 2 ก่อน
+        val diff = top.topScore - top.secondScore
+        // เช็คทั้งความมั่นใจขั้นต่ำ (tau) และความห่าง (delta)
+        val pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
 
         if (pass && key != "no_action") {
             agg?.add(top.topIdx, top.topScore)
