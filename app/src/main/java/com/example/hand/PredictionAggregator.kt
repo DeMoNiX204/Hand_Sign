@@ -25,7 +25,6 @@ class PredictionAggregator(private val numClasses: Int) {
         sums[idx] += score
     }
 
-    // ✅ ใหม่: แบบ A — ไม่ให้บางคลาสชนะ (เช่น no_action)
     fun bestResultExclude(
         excludeIdx: Int?,
         minCount: Int,
@@ -44,7 +43,6 @@ class PredictionAggregator(private val numClasses: Int) {
             val s = sums[i]
             val avg = s / c.toFloat()
 
-            // ✅ กรองก่อนเลือก
             if (c < minCount) continue
             if (s < minSum) continue
             if (avg < minAvg) continue

@@ -5,10 +5,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
@@ -27,15 +25,9 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Buttons from Design 4
+        // Buttons
         val fabCamera = findViewById<FrameLayout>(R.id.fabCamera)
-        val btnDebug  = findViewById<ImageButton>(R.id.btnDebug)
-
-        // Cards from Design 4
-        val cardGuide    = findViewById<CardView>(R.id.cardGuide)
-        val cardHistory  = findViewById<CardView>(R.id.cardHistory)
-        val cardSettings = findViewById<CardView>(R.id.cardSettings)
-        val cardHelp     = findViewById<CardView>(R.id.cardHelp)
+//        val btnDebug  = findViewById<ImageButton>(R.id.btnDebug)
 
         // FAB Camera - เปิดกล้อง
         fabCamera.setOnClickListener {
@@ -43,28 +35,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Debug Button - เปิด Debug Camera
-        btnDebug.setOnClickListener {
-            startActivity(Intent(this, DebugCameraActivity::class.java))
-        }
-
-        // Card: คู่มือใช้งาน
-        cardGuide.setOnClickListener {
-            Toast.makeText(this, "คู่มือ (ยังไม่ได้ทำหน้า Guide)", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: ประวัติการใช้
-        cardHistory.setOnClickListener {
-            Toast.makeText(this, "คลังวิดีโอ", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: ตั้งค่า
-        cardSettings.setOnClickListener {
-            Toast.makeText(this, "เกี่ยวกับApp", Toast.LENGTH_SHORT).show()
-        }
-
-        // Card: ช่วยเหลือ
-        cardHelp.setOnClickListener {
-            Toast.makeText(this, "ผู้จัดทำ", Toast.LENGTH_SHORT).show()
-        }
+//        btnDebug.setOnClickListener {
+//            startActivity(Intent(this, DebugCameraActivity::class.java))
+//        }
     }
 }

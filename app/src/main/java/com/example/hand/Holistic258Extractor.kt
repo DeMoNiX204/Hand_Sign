@@ -10,8 +10,6 @@ object Holistic258Extractor {
     // 🎛️ CONFIG ZONE (ไม่แตะต้องตามที่คุณขอ)
     // ==========================================
     private const val SWAP_AXES = true
-    private const val INVERT_X  = false
-    private const val INVERT_Y  = false
 
     // 🔥 ปรับให้ตรงกับ Python (0.001)
     private const val MIN_BODY_SIZE = 0.001f
@@ -39,8 +37,6 @@ object Holistic258Extractor {
             var x = lm.x()
             var y = lm.y()
             if (SWAP_AXES) { val temp = x; x = y; y = temp }
-            if (INVERT_X) x = 1f - x
-            if (INVERT_Y) y = 1f - y
             return Pair(x, y)
         }
 

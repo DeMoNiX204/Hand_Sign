@@ -5,7 +5,7 @@ object ModelConfig {
     // =========================
     // ✅ เปลี่ยนโมเดล “แก้ที่นี่ที่เดียว”
     // =========================
-    const val MODEL_DIR = "bi-gru-v1.2.2"
+    const val MODEL_DIR = "final_version"
     const val TFLITE_NAME = "model_fp16.tflite"
     const val LABELS_NAME = "label_map.json"
     const val THRESH_NAME = "thresholds.json"

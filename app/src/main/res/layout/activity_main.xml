@@ -36,7 +36,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="24dp"
                     android:layout_marginTop="60dp"
-                    android:text="Hand App"
+                    android:text="Health Hand"
                     android:textColor="#FFFFFF"
                     android:textSize="28sp"
                     android:textStyle="bold"
@@ -57,25 +57,24 @@
                     app:layout_constraintTop_toBottomOf="@id/txtTitle" />
 
                 <!-- Debug icon (top-right) -->
-                <ImageButton
-                    android:id="@+id/btnDebug"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@drawable/bg_debug_button"
-                    android:contentDescription="Debug"
-                    android:src="@drawable/debug"
-                    android:scaleType="centerInside"
-                    android:padding="10dp"
-                    app:tint="#FFFFFF"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="@id/txtTitle"
-                    app:layout_constraintBottom_toBottomOf="@id/txtSubtitle" />
-
+<!--                <ImageButton-->
+<!--                    android:id="@+id/btnDebug"-->
+<!--                    android:layout_width="44dp"-->
+<!--                    android:layout_height="44dp"-->
+<!--                    android:layout_marginEnd="16dp"-->
+<!--                    android:background="@drawable/bg_debug_button"-->
+<!--                    android:contentDescription="Debug"-->
+<!--                    android:src="@drawable/debug"-->
+<!--                    android:scaleType="centerInside"-->
+<!--                    android:padding="10dp"-->
+<!--                    app:tint="#FFFFFF"-->
+<!--                    app:layout_constraintEnd_toEndOf="parent"-->
+<!--                    app:layout_constraintTop_toTopOf="@id/txtTitle"-->
+<!--                    app:layout_constraintBottom_toBottomOf="@id/txtSubtitle" />-->
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- ===== Content Area ===== -->
+            <!-- ===== คู่มือการใช้งาน ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -84,176 +83,271 @@
                 android:paddingBottom="100dp">
 
                 <TextView
-                    android:id="@+id/txtQuickActions"
+                    android:id="@+id/txtGuideTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="เมนูหลัก"
+                    android:text="คู่มือการใช้งาน"
                     android:textColor="#333333"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_marginBottom="8dp" />
 
-                <!-- Quick Action Grid -->
-                <GridLayout
-                    android:id="@+id/actionGrid"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="เรียนรู้วิธีใช้งานแอปพลิเคชัน"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- ===== ขั้นตอนที่ 1 ===== -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:rowCount="2">
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:cardUseCompatPadding="true"
+                    app:cardBackgroundColor="#FFFFFF">
 
-                    <!-- Action 1: คู่มือ -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardGuide"
-                        android:layout_width="0dp"
-                        android:layout_height="140dp"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginBottom="16dp"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="20dp">
-
-                            <View
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:background="@drawable/bg_action_icon_gradient" />
+                        <!-- ไอคอนหมายเลข -->
+                        <FrameLayout
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:background="@drawable/bg_camera_red_gradient">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:text="คู่มือใช้งาน"
-                                android:textColor="#333333"
-                                android:textSize="14sp"
+                                android:layout_gravity="center"
+                                android:text="1"
+                                android:textColor="#FFFFFF"
+                                android:textSize="24sp"
                                 android:textStyle="bold" />
-                        </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                        </FrameLayout>
 
-                    <!-- Action 2: ประวัติ -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardHistory"
-                        android:layout_width="0dp"
-                        android:layout_height="140dp"
-                        android:layout_columnWeight="1"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginBottom="16dp"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
-
+                        <!-- คำอธิบาย -->
                         <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="20dp">
-
-                            <View
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:background="@drawable/bg_action_icon_gradient" />
+                            android:layout_marginStart="16dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:text="คลังวิดีโอ"
+                                android:text="กดปุ่มกล้อง"
                                 android:textColor="#333333"
-                                android:textSize="14sp"
+                                android:textSize="16sp"
                                 android:textStyle="bold" />
-                        </LinearLayout>
-                    </androidx.cardview.widget.CardView>
-
-                    <!-- Action 3: ตั้งค่า -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardSettings"
-                        android:layout_width="0dp"
-                        android:layout_height="140dp"
-                        android:layout_columnWeight="1"
-                        android:layout_marginEnd="8dp"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="20dp">
-
-                            <View
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:background="@drawable/bg_action_icon_gradient" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:text="เกี่ยวกับApp"
-                                android:textColor="#333333"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
+                                android:layout_marginTop="4dp"
+                                android:text="กดปุ่มกล้องสีแดงด้านล่างขวาเพื่อเปิดกล้อง"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
                         </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <!-- Action 4: ช่วยเหลือ -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardHelp"
-                        android:layout_width="0dp"
-                        android:layout_height="140dp"
-                        android:layout_columnWeight="1"
-                        android:layout_marginStart="8dp"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="0dp">
+                <!-- ===== ขั้นตอนที่ 2 ===== -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:cardUseCompatPadding="true"
+                    app:cardBackgroundColor="#FFFFFF">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:padding="20dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
 
-                            <View
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:background="@drawable/bg_action_icon_gradient" />
+                        <FrameLayout
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:background="@drawable/bg_camera_red_gradient">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:text="ผู้จัดทำ"
-                                android:textColor="#333333"
-                                android:textSize="14sp"
+                                android:layout_gravity="center"
+                                android:text="2"
+                                android:textColor="#FFFFFF"
+                                android:textSize="24sp"
                                 android:textStyle="bold" />
-                        </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                        </FrameLayout>
 
-                </GridLayout>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="จัดท่าการยืน"
+                                android:textColor="#333333"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="ยืนให้อยู่ตรงกลางของกล้องแล้วเห็นหัวเข่า"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- ===== ขั้นตอนที่ 3 ===== -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:cardUseCompatPadding="true"
+                    app:cardBackgroundColor="#FFFFFF">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <FrameLayout
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:background="@drawable/bg_camera_red_gradient">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="3"
+                                android:textColor="#FFFFFF"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="กดเริ่ม"
+                                android:textColor="#333333"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="ระบบจะทำการอ่านท่า"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- ===== ขั้นตอนที่ 4 ===== -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:cardUseCompatPadding="true"
+                    app:cardBackgroundColor="#FFFFFF">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <FrameLayout
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:background="@drawable/bg_camera_red_gradient">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="4"
+                                android:textColor="#FFFFFF"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="กดหยุดเพื่อดูผล"
+                                android:textColor="#333333"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="กดหยุดแล้วแอปจะแสดงผลลัพธ์ออกมา"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
             </LinearLayout>
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
-    <!-- ===== Camera Button (แทน FAB) ===== -->
+
+    <!-- ===== Camera Button ===== -->
     <FrameLayout
         android:id="@+id/fabCamera"
         android:layout_width="70dp"
         android:layout_height="70dp"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="20dp"
         android:background="@drawable/bg_camera_red_gradient"
         android:clickable="true"
         android:focusable="true">
