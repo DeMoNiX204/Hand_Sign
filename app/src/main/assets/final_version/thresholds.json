@@ -1,27 +1,27 @@
 {
     "anxiety": {
-        "tau": 0.6,
+        "tau": 0.8,
         "delta": 0.9
     },
     "fever": {
-        "tau": 0.3,
-        "delta": 0.8
+        "tau": 0.5,
+        "delta": 0.2
     },
     "feverish": {
         "tau": 0.0,
         "delta": 0.1
     },
     "insomnia": {
-        "tau": 0.6,
-        "delta": 0.1
+        "tau": 0.9,
+        "delta": 0.9
     },
     "itching": {
         "tau": 0.3,
         "delta": 0.9
     },
     "no_action": {
-        "tau": 0.3,
-        "delta": 0.7
+        "tau": 1.0,
+        "delta": 1.0
     },
     "polyuria": {
         "tau": 0.0,
@@ -29,10 +29,10 @@
     },
     "suffocated": {
         "tau": 0.3,
-        "delta": 0.6
+        "delta": 0.3
     },
     "wounded": {
-        "tau": 0.3,
-        "delta": 0.5
+        "tau": 0.7,
+        "delta": 0.9
     }
 }

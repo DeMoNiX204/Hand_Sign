@@ -12,7 +12,7 @@ class HolisticFrameAnalyzer(
     private val runner: HolisticLandmarkerRunner
 ) : ImageAnalysis.Analyzer {
 
-    private var lastTs: Long = 0L
+    private var lastTs = 0L
 
     override fun analyze(image: ImageProxy) {
         if (!enabled()) {
@@ -37,10 +37,7 @@ class HolisticFrameAnalyzer(
             val ts  = max(now, lastTs + 1)
             lastTs  = ts
 
-            // ✅ ส่ง rotationDegrees = 0 เสมอ
-            // Python: cv2.flip(frame,1) แล้วส่งตรงๆ ไม่มี rotation
-            // ถ้าเราส่ง rotationDegrees จริง (เช่น 90) MediaPipe จะ rotate พิกัด
-            // ทำให้ X,Y สลับกัน ไม่ตรงกับ Python
+
             runner.detectAsync(
                 rgbaBuffer     = rgba,
                 width          = width,

@@ -162,7 +162,7 @@ class CameraActivity : AppCompatActivity() {
 
         val lm = labelMap ?: return
         val a = agg ?: return
-        val noActionIdx = findLabelIndex(lm, "no_action")
+        val noActionIdx = lm.indexOf("no_action")
 
         // 🔥🔥 แก้ไขจุดที่ 1: Hardcode ค่า minCount ให้ต่ำลง (3) เพื่อให้สรุปผลง่ายขึ้น
         val best = a.bestResultExclude(
@@ -258,11 +258,6 @@ class CameraActivity : AppCompatActivity() {
             else if (v > secScore) { secScore = v; secIdx = i }
         }
         return Top2(topIdx, topScore, secIdx, secScore)
-    }
-
-    private fun findLabelIndex(lm: LabelMap, t: String): Int? {
-        for (i in 0 until lm.size) if (lm[i] == t) return i
-        return null
     }
 
     // ===== Camera =====
