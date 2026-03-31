@@ -264,8 +264,7 @@ class DebugCameraActivity : AppCompatActivity() {
         val rule = thr.forLabel(key)
 
         // คำนวณความห่างและเช็คผ่านเกณฑ์
-//        val diff = top.topScore - top.secondScore
-        val pass = (top.topScore >= rule.tau) //&& (diff >= rule.delta)
+        val pass = (top.topScore >= rule.tau)
 
         if (pass && key != "no_action") {
             agg?.add(top.topIdx, top.topScore)
