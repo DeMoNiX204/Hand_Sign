@@ -1,0 +1,30 @@
+{
+    "anxiety": {
+        "tau": 0.8
+    },
+    "fever": {
+        "tau": 0.5
+    },
+    "feverish": {
+        "tau": 0.2
+    },
+    "insomnia": {
+        "tau": 0.2
+    },
+    "itching": {
+        "tau": 0.3
+    },
+    "no_action": {
+        "tau": 1.0
+    },
+    "polyuria": {
+        "tau": 0.2
+    },
+    "suffocated": {
+        "tau": 0.3
+    },
+    "wounded": {
+        "tau": 0.7
+
+    }
+}

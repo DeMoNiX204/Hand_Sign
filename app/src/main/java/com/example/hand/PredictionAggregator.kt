@@ -47,7 +47,7 @@ class PredictionAggregator(private val numClasses: Int) {
             if (s < minSum) continue
             if (avg < minAvg) continue
 
-            if (best == null || c > best!!.count || (c == best!!.count && s > best!!.sum)) {
+            if (best == null || c > best!!.count || (c == best!!.count && avg > best!!.avg)) {
                 best = AggBest(i, c, s, avg)
             }
         }

@@ -220,12 +220,12 @@ class DebugCameraActivity : AppCompatActivity() {
         // 🔥 กฎเช็คคนเดียวกับ CameraActivity
         if (!hasPerson(result)) {
             setStatusState("ไม่พบคน")
-            maybeUpdateDebug(now, false, hasBothArms(result), seqCount, null, false, null, null, null, null, lhCount, rhCount)
+            maybeUpdateDebug(now, false, hasBothArms(result), seqCount, null, false, null, null, null, lhCount, rhCount)
             return
         }
         if (!hasBothArms(result)) {
             setStatusState("เห็นแขนไม่ครบ")
-            maybeUpdateDebug(now, true, false, seqCount, null, false, null, null, null, null, lhCount, rhCount)
+            maybeUpdateDebug(now, true, false, seqCount, null, false, null, null, null, lhCount, rhCount)
             return
         }
 
@@ -240,7 +240,7 @@ class DebugCameraActivity : AppCompatActivity() {
         // ถ้ายูเซอร์เพิ่งกดเริ่ม และ Buffer ยังไม่เต็ม 30 เฟรม
         if (!seq.isFull()) {
             setStatusState("กำลังเก็บข้อมูล... ($seqCount/30)")
-            maybeUpdateDebug(now, true, true, seqCount, null, false, null, null, null, dataStr, lhCount, rhCount)
+            maybeUpdateDebug(now, true, true, seqCount, null, false, null, null, dataStr, lhCount, rhCount)
             return
         }
 
@@ -264,8 +264,8 @@ class DebugCameraActivity : AppCompatActivity() {
         val rule = thr.forLabel(key)
 
         // คำนวณความห่างและเช็คผ่านเกณฑ์
-        val diff = top.topScore - top.secondScore
-        val pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
+//        val diff = top.topScore - top.secondScore
+        val pass = (top.topScore >= rule.tau) //&& (diff >= rule.delta)
 
         if (pass && key != "no_action") {
             agg?.add(top.topIdx, top.topScore)
@@ -280,7 +280,7 @@ class DebugCameraActivity : AppCompatActivity() {
             setStatusState("${i18n.t(key)} ($livePercent%) $passStr")
         }
 
-        maybeUpdateDebug(now, true, true, seqCount, top, pass, key, rule.tau, rule.delta, dataStr, lhCount, rhCount)
+        maybeUpdateDebug(now, true, true, seqCount, top, pass, key, rule.tau, dataStr, lhCount, rhCount)
     }
 
     private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
@@ -363,7 +363,7 @@ class DebugCameraActivity : AppCompatActivity() {
     private fun maybeUpdateDebug(
         now: Long, personOk: Boolean, armsOk: Boolean, seqC: Int,
         top: Top2?, pass: Boolean,
-        label: String?, tau: Float?, delta: Float?,
+        label: String?, tau: Float?,
         dataStr: String? = null,
         lhCount: Int = 0, rhCount: Int = 0
     ) {
@@ -391,7 +391,7 @@ class DebugCameraActivity : AppCompatActivity() {
             sb.append("1) ${i18n.t(k1)} ($sc1%)\n")
             if (sc2 > 1) sb.append("2) ${i18n.t(k2)} ($sc2%)\n")
 
-            if (label != null && tau != null && delta != null) {
+            if (label != null && tau != null ) {
                 val pStr = if (pass) "Pass" else "Wait"
                 sb.append("Rule: $label ($pStr)")
             }

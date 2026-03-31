@@ -1,13 +1,10 @@
 {
-  "fever": "ไข้",
-  "feverish": "รู้สึกร้อนๆหนาวๆ",
-  "wounded": "บาดเจ็บ",
-  "distention": "แน่นท้อง",
+  "fever": "เป็นไข้",
+  "feverish": "ร้อนๆหนาวๆ",
+  "wounded": "เป็นแผล",
   "insomnia": "นอนไม่หลับ",
-  "fed_up_with_food": "เบื่ออาหาร",
   "anxiety": "คิดมาก",
   "itching": "อาการคัน",
-  "pain": "เจ็บ",
   "polyuria": "ปัสสาวะบ่อย ",
   "suffocated": "แน่นหน้าอก "
 }

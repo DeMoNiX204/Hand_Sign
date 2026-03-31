@@ -6,15 +6,15 @@ import com.google.gson.JsonParser
 
 data class ThresholdRule(
     val tau: Float,
-    val delta: Float
+//    val delta: Float
 )
 
 data class ThresholdConfig(
     val tau: Float = 0.5f,
-    val delta: Float = 0.0f,
+//    val delta: Float = 0.0f,
     val perClass: Map<String, ThresholdRule> = emptyMap()
 ) {
-    fun forLabel(label: String): ThresholdRule = perClass[label] ?: ThresholdRule(tau, delta)
+    fun forLabel(label: String): ThresholdRule = perClass[label] ?: ThresholdRule(tau)
 
     companion object {
         fun fromAssets(ctx: Context, assetName: String): ThresholdConfig {
@@ -30,25 +30,24 @@ data class ThresholdConfig(
         private fun parseSimple(o: JsonObject): ThresholdConfig {
             // 1. ดึงค่า Global (ถ้ามี)
             val gTau = if (o.has("tau")) o.get("tau").asFloat else 0.5f
-            val gDel = if (o.has("delta")) o.get("delta").asFloat else 0.0f
+//            val gDel = if (o.has("delta")) o.get("delta").asFloat else 0.0f
 
             val per = mutableMapOf<String, ThresholdRule>()
 
             // 2. วนลูปอ่านรายคลาสตามรูปแบบที่คุณส่งมา
             for ((key, value) in o.entrySet()) {
                 // ข้าม key ที่เป็นค่า global
-                if (key == "tau" || key == "delta") continue
+                if (key == "tau") continue
 
                 if (value.isJsonObject) {
                     val obj = value.asJsonObject
                     // อ่านค่า tau/delta ของคลาสนั้นๆ ถ้าไม่มีให้ใช้ค่า Global
                     val t = if (obj.has("tau")) obj.get("tau").asFloat else gTau
-                    val d = if (obj.has("delta")) obj.get("delta").asFloat else gDel
-                    per[key] = ThresholdRule(t, d)
+                    per[key] = ThresholdRule(t)
                 }
             }
 
-            return ThresholdConfig(tau = gTau, delta = gDel, perClass = per)
+            return ThresholdConfig(tau = gTau, perClass = per)
         }
     }
 }

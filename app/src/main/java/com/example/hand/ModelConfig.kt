@@ -5,8 +5,8 @@ object ModelConfig {
     // =========================
     // ✅ เปลี่ยนโมเดล “แก้ที่นี่ที่เดียว”
     // =========================
-    const val MODEL_DIR = "final_version"
-    const val TFLITE_NAME = "model_fp16.tflite"
+    const val MODEL_DIR = "bi-gru-Final_Version"
+    const val TFLITE_NAME = "model_int8.tflite"
     const val LABELS_NAME = "label_map.json"
     const val THRESH_NAME = "thresholds.json"
 
@@ -25,10 +25,10 @@ object ModelConfig {
     const val MIN_COUNT_TO_ACCEPT = 3
 
     // 2) sum (ผลรวมคะแนนของคลาสนั้น)
-    const val MIN_SUM_TO_ACCEPT = 0.5f
+    const val MIN_SUM_TO_ACCEPT = 0.4f
 
     // 3) avg (ค่าเฉลี่ย = sum / count)
-    const val MIN_AVG_SCORE_TO_ACCEPT = 0.5f
+    const val MIN_AVG_SCORE_TO_ACCEPT = 0.4f
 
     // assets paths (Activity จะเรียกใช้อันนี้)
     val MODEL_TFLITE_ASSET: String get() = "$MODEL_DIR/$TFLITE_NAME"

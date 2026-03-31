@@ -176,7 +176,8 @@ class CameraActivity : AppCompatActivity() {
             setStatusState("ยังไม่มั่นใจ ลองใหม่")
         } else {
             val key = lm[best.idx]
-            setStatusState("${"ผลลัพธ์"}: ${i18n.t(key)}")
+            val percent = (best.avg * 100).toInt()
+            setStatusState("${"ผลลัพธ์"}: ${i18n.t(key)} ($percent%)")
         }
     }
 
@@ -221,9 +222,9 @@ class CameraActivity : AppCompatActivity() {
         val rule = thr.forLabel(key)
 
         // คำนวณความห่างคะแนนอันดับ 1 กับอันดับ 2 ก่อน
-        val diff = top.topScore - top.secondScore
+//        val diff = top.topScore - top.secondScore
         // เช็คทั้งความมั่นใจขั้นต่ำ (tau) และความห่าง (delta)
-        val pass = (top.topScore >= rule.tau) && (diff >= rule.delta)
+        val pass = (top.topScore >= rule.tau) //&& (diff >= rule.delta)
 
         if (pass && key != "no_action") {
             agg?.add(top.topIdx, top.topScore)
