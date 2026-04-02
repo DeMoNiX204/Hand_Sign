@@ -10,10 +10,7 @@ class I18n private constructor(
     fun t(key: String): String = dict[key] ?: key
 
     companion object {
-        /**
-         * @param lang "th" หรือ "en"
-         * assets path: assets/i18n/<lang>.json
-         */
+
         fun fromAssets(ctx: Context, lang: String): I18n {
             val path = "i18n/$lang.json"
             val json = ctx.assets.open(path).bufferedReader().use { it.readText() }

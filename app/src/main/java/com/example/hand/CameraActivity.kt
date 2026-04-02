@@ -30,7 +30,7 @@ class CameraActivity : AppCompatActivity() {
     private val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
     private var cameraProvider: ProcessCameraProvider? = null
-    // ใช้ Executor แบบนี้ปลอดภัยกว่า
+    // ใช้ Executor
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
     // ===== UI =====
@@ -53,14 +53,14 @@ class CameraActivity : AppCompatActivity() {
 
     private val seq = SequenceBuffer(seqLen = ModelConfig.SEQ_T, featDim = ModelConfig.FEAT_F)
 
-    // 🔥 2. เพิ่มตัวแปรสำหรับ EMA Smoothing
+    // EMA Smoothing
     private var prevProbs: FloatArray? = null
-    private val alphaEMA = 0.2f // ค่า Alpha 0.2 (ตรงกับ Python)
+    private val alphaEMA = 0.2f
 
     private val askCamera = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) startCamera()
+    ) { isAllowed ->
+        if (isAllowed) startCamera()
         else setStatusState("ไม่ได้รับอนุญาตให้ใช้กล้อง")
     }
 
@@ -75,7 +75,7 @@ class CameraActivity : AppCompatActivity() {
             insets
         }
 
-        // 1. Init UI ก่อนเสมอ
+        // UI 
         previewView = findViewById(R.id.previewView)
         txtResult = findViewById(R.id.txtResult)
         btnToggle = findViewById(R.id.btnToggle)
@@ -83,12 +83,11 @@ class CameraActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
 
         btnBack.setOnClickListener {
-            // หยุดการทำงานก่อนปิด
             stopRun(showSummary = false)
             finish()
         }
 
-        // 2. Check Assets (กันเข้าแล้วเด้ง)
+        // Check Assets
         val missing = buildList {
             if (!assetExists(ModelConfig.HOLISTIC_TASK)) add(ModelConfig.HOLISTIC_TASK)
             if (!assetExists(ModelConfig.MODEL_TFLITE_ASSET)) add(ModelConfig.MODEL_TFLITE_ASSET)
@@ -96,19 +95,19 @@ class CameraActivity : AppCompatActivity() {
             if (!assetExists("i18n/$kLang.json")) add("i18n/$kLang.json")
         }
         if (missing.isNotEmpty()) {
-            setStatusState("❌ assets หาย: ${missing.joinToString(", ")}")
+            setStatusState("assets หาย: ${missing.joinToString(", ")}")
             return
         }
 
-        // 3. Load i18n
+        // Load i18n
         try {
             i18n = I18n.fromAssets(this, kLang)
         } catch (e: Exception) {
-            setStatusState("❌ i18n error: ${e.message}")
+            setStatusState("i18n error: ${e.message}")
             return
         }
 
-        // 4. Init ML
+        // Init ML
         try {
             labelMap = LabelMap.fromAssets(this, ModelConfig.MODEL_LABELS_ASSET)
             thr = ThresholdConfig.fromAssets(this, ModelConfig.MODEL_THRESH_ASSET)
@@ -125,10 +124,10 @@ class CameraActivity : AppCompatActivity() {
                 context = this,
                 modelAssetName = ModelConfig.HOLISTIC_TASK,
                 onResult = { r -> onHolisticResult(r) },
-                onError = { msg -> setStatusState("❌ ML Error: $msg") }
+                onError = { msg -> setStatusState("ML Error: $msg") }
             )
         } catch (t: Throwable) {
-            setStatusState("❌ Init Fail: ${t.message}")
+            setStatusState("Init Fail: ${t.message}")
             return
         }
 
@@ -137,7 +136,7 @@ class CameraActivity : AppCompatActivity() {
             if (!isRunning) startRun() else stopRun(showSummary = true)
         }
 
-        setStatusState("✅ พร้อม (กดปุ่มเล่น)")
+        setStatusState("พร้อม (กดปุ่มเล่น)")
         askCamera.launch(Manifest.permission.CAMERA)
     }
 
@@ -146,7 +145,7 @@ class CameraActivity : AppCompatActivity() {
         seq.reset()
         Holistic258Extractor.reset()
         agg?.reset()
-        prevProbs = null // รีเซ็ต EMA เมื่อเริ่มใหม่
+        prevProbs = null // รีเซ็ต EMA
         imgToggle.setImageResource(android.R.drawable.ic_media_pause)
         setStatusState("กำลังจับท่า...")
     }
@@ -164,7 +163,6 @@ class CameraActivity : AppCompatActivity() {
         val a = agg ?: return
         val noActionIdx = lm.indexOf("no_action")
 
-        // 🔥🔥 แก้ไขจุดที่ 1: Hardcode ค่า minCount ให้ต่ำลง (3) เพื่อให้สรุปผลง่ายขึ้น
         val best = a.bestResultExclude(
             excludeIdx = noActionIdx,
             minCount = ModelConfig.MIN_COUNT_TO_ACCEPT,
@@ -201,10 +199,10 @@ class CameraActivity : AppCompatActivity() {
         seq.add(frame)
         if (!seq.isFull()) return
 
-        // 1. ได้ค่าดิบ (Raw Probabilities)
+        // Raw Probabilities
         val rawProbs = classifier?.predict(seq.toFlatFloatArray()) ?: return
 
-        // 🔥 3. คำนวณ EMA Smoothing (เพื่อให้ค่านิ่งเท่า Python)
+        //  คำนวณ EMA Smoothing
         val probs = if (prevProbs == null) {
             rawProbs
         } else {
@@ -215,14 +213,11 @@ class CameraActivity : AppCompatActivity() {
         }
         prevProbs = probs // จำค่าไว้ใช้รอบหน้า
 
-        // 4. ใช้ค่า probs ที่ Smooth แล้วไปคำนวณต่อ
-        val top = top1top2(probs)
+        //  ใช้ค่า probs ที่ Smooth แล้วไปคำนวณต่อ
+        val top = getTopResult(probs)
         val key = labelMap!![top.topIdx]
 
         val rule = thr.forLabel(key)
-
-        // คำนวณความห่างคะแนนอันดับ 1 กับอันดับ 2 ก่อน
-
 
         val pass = (top.topScore >= rule.tau)
 
@@ -250,7 +245,7 @@ class CameraActivity : AppCompatActivity() {
         return (ok(11) && ok(13) && ok(15)) && (ok(12) && ok(14) && ok(16))
     }
 
-    private fun top1top2(probs: FloatArray): Top2 {
+    private fun getTopResult(probs: FloatArray): TopResult {
         var topIdx = 0; var topScore = -1f
         var secIdx = 0; var secScore = -1f
         for (i in probs.indices) {
@@ -258,7 +253,7 @@ class CameraActivity : AppCompatActivity() {
             if (v > topScore) { secScore = topScore; secIdx = topIdx; topScore = v; topIdx = i }
             else if (v > secScore) { secScore = v; secIdx = i }
         }
-        return Top2(topIdx, topScore, secIdx, secScore)
+        return TopResult(topIdx, topScore)
     }
 
     // ===== Camera =====
@@ -301,20 +296,20 @@ class CameraActivity : AppCompatActivity() {
 
     private fun assetExists(n: String) = try { assets.open(n).close(); true } catch (_: Throwable) { false }
 
-    // 🔥🔥 จุดสำคัญ: แก้ onDestroy เพื่อป้องกัน Crash ตอนกด Back 🔥🔥
+    //  onDestroy เพื่อป้องกัน Crash ตอนกด Back
     override fun onDestroy() {
-        // 1. หยุดรับภาพจากกล้องทันที (สำคัญมาก)
+        // หยุดรับภาพจากกล้องทันที
         try { cameraProvider?.unbindAll() } catch (_: Throwable) {}
 
-        // 2. ปิด Thread ที่ประมวลผล
+        // ปิด Thread ที่ประมวลผล
         cameraExecutor.shutdown()
 
-        // 3. ปิด Model
+        // ปิด Model
         try { runner?.close() } catch (_: Throwable) {}
         try { classifier?.close() } catch (_: Throwable) {}
 
         super.onDestroy()
     }
 
-    private data class Top2(val topIdx: Int, val topScore: Float, val secondIdx: Int, val secondScore: Float)
+    private data class TopResult(val topIdx: Int, val topScore: Float)
 }
