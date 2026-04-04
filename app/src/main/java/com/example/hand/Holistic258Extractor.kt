@@ -6,20 +6,19 @@ import kotlin.math.hypot
 
 object Holistic258Extractor {
 
-    // ==========================================
-    // 🎛️ CONFIG ZONE (ไม่แตะต้องตามที่คุณขอ)
-    // ==========================================
+    // ============
+    // CONFIG ZONE
+    // ============
     private const val SWAP_AXES = true
 
-    // 🔥 ปรับให้ตรงกับ Python (0.001)
+    // ปรับให้ตรงกับ Python (0.001)
     private const val MIN_BODY_SIZE = 0.001f
 
-    // 💾 ระบบจำค่าล่าสุด (Forward Fill) แบบเดียวกับ Python ป้องกันมือวาร์ป
+    // ระบบจำค่าล่าสุด (Forward Fill)
     private var prevPose = FloatArray(132)
     private var prevRightHand = FloatArray(63)
     private var prevLeftHand = FloatArray(63)
 
-    // ✅ เรียกใช้ตอนสลับกล้องหรือเริ่มจับภาพใหม่ เพื่อล้างความจำมือ
     fun reset() {
         prevPose = FloatArray(132)
         prevRightHand = FloatArray(63)
@@ -63,7 +62,7 @@ object Holistic258Extractor {
 
         if (lShoulderRaw != null && rShoulderRaw != null) {
             val dw = hypot((lxs - rxs).toDouble(), (lys - rys).toDouble()).toFloat()
-            // 🔥 ปรับสูตรเช็ค Body Size ให้ตรง Python (เช็ค < 0.001)
+            // ปรับสูตรเช็ค Body Size
             scale = if (dw < MIN_BODY_SIZE) 1f else dw
 
             refX = (lxs + rxs) * 0.5f
@@ -102,7 +101,7 @@ object Holistic258Extractor {
         // ==============================
         val realRightHand = r.rightHandLandmarks()
         if (realRightHand.isEmpty()) {
-            // 🔥 FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
+            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
             for (v in prevRightHand) out[k++] = v
         } else {
             val startK = k
@@ -121,7 +120,7 @@ object Holistic258Extractor {
         // ==============================
         val realLeftHand = r.leftHandLandmarks()
         if (realLeftHand.isEmpty()) {
-            // 🔥 FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
+            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
             for (v in prevLeftHand) out[k++] = v
         } else {
             val startK = k

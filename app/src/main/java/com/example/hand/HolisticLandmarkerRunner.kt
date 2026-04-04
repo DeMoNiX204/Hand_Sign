@@ -39,7 +39,6 @@ class HolisticLandmarkerRunner(
                 } catch (t: Throwable) {
                     onError(t.message ?: "onResult failed")
                 }
-                // ไม่ต้อง input.close() ที่นี่เพราะ MediaPipe จัดการให้ใน Live Stream Mode (แต่ถ้าใส่ก็ได้)
             }
             .setErrorListener { e ->
                 if (!isClosed) onError(e.message ?: "HolisticLandmarker error")
@@ -49,7 +48,7 @@ class HolisticLandmarkerRunner(
         landmarker = HolisticLandmarker.createFromOptions(context, options)
     }
 
-    fun detectAsync(
+    fun processFrame(
         rgbaBuffer: ByteBuffer,
         width: Int,
         height: Int,
@@ -70,7 +69,7 @@ class HolisticLandmarkerRunner(
                 .setRotationDegrees(rotationDegrees)
                 .build()
 
-            // 🔥 ใส่ try-catch ป้องกัน Crash ถ้าเผลอเรียกตอนปิดแอป
+            //  try-catch ป้องกัน Crash ถ้าเผลอเรียกตอนปิดแอป
             landmarker?.detectAsync(mpImage, opt, timestampMs)
 
         } catch (e: Exception) {

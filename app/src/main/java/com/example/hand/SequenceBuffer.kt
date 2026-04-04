@@ -19,7 +19,7 @@ class SequenceBuffer(private val seqLen: Int, private val featDim: Int) {
 
     fun isFull(): Boolean = count >= seqLen
 
-    fun toFlatFloatArray(): FloatArray {
+    fun getStartIndex(): FloatArray {
         val out = FloatArray(seqLen * featDim)
         val start = if (count < seqLen) 0 else writeIdx // oldest
         var k = 0

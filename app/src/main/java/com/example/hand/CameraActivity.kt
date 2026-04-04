@@ -123,7 +123,7 @@ class CameraActivity : AppCompatActivity() {
             runner = HolisticLandmarkerRunner(
                 context = this,
                 modelAssetName = ModelConfig.HOLISTIC_TASK,
-                onResult = { r -> onHolisticResult(r) },
+                onResult = { result -> onHolisticResult(result) },
                 onError = { msg -> setStatusState("ML Error: $msg") }
             )
         } catch (t: Throwable) {
@@ -159,9 +159,9 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        val lm = labelMap ?: return
+        val labels = labelMap ?: return
         val a = agg ?: return
-        val noActionIdx = lm.indexOf("no_action")
+        val noActionIdx = labels.indexOf("no_action")
 
         val best = a.bestResultExclude(
             excludeIdx = noActionIdx,
@@ -173,7 +173,7 @@ class CameraActivity : AppCompatActivity() {
         if (best == null) {
             setStatusState("ยังไม่มั่นใจ ลองใหม่")
         } else {
-            val key = lm[best.idx]
+            val key = labels[best.idx]
             val percent = (best.avg * 100).toInt()
             setStatusState("${"ผลลัพธ์"}: ${i18n.t(key)} ($percent%)")
         }
@@ -200,7 +200,7 @@ class CameraActivity : AppCompatActivity() {
         if (!seq.isFull()) return
 
         // Raw Probabilities
-        val rawProbs = classifier?.predict(seq.toFlatFloatArray()) ?: return
+        val rawProbs = classifier?.predict(seq.getStartIndex()) ?: return
 
         //  คำนวณ EMA Smoothing
         val probs = if (prevProbs == null) {
@@ -226,17 +226,18 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ... (ฟังก์ชัน Helper hasPerson, hasBothArms, top1top2 เหมือนเดิม) ...
-    private fun hasPerson(r: HolisticLandmarkerResult): Boolean {
-        val pose = r.poseLandmarks()
+    //  hasPerson
+    private fun hasPerson(holisticResult: HolisticLandmarkerResult): Boolean {
+        val pose = holisticResult.poseLandmarks()
         if (pose.isEmpty()) return false
         var good = 0
         for (lm in pose) if ((lm.visibility().orElse(0f)) >= 0.5f) good++
         return good >= 8
     }
 
-    private fun hasBothArms(r: HolisticLandmarkerResult): Boolean {
-        val pose = r.poseLandmarks()
+    // hasBothArms
+    private fun hasBothArms(holisticResult: HolisticLandmarkerResult): Boolean {
+        val pose = holisticResult.poseLandmarks()
         if (pose.size < 17) return false
         fun ok(i: Int): Boolean {
             val lm = pose[i]
@@ -246,12 +247,15 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun getTopResult(probs: FloatArray): TopResult {
-        var topIdx = 0; var topScore = -1f
-        var secIdx = 0; var secScore = -1f
+        var topIdx = 0;
+        var topScore = -1f
+
         for (i in probs.indices) {
             val v = probs[i]
-            if (v > topScore) { secScore = topScore; secIdx = topIdx; topScore = v; topIdx = i }
-            else if (v > secScore) { secScore = v; secIdx = i }
+            if (v > topScore) {
+                topScore = v
+                topIdx = i
+            }
         }
         return TopResult(topIdx, topScore)
     }
@@ -278,9 +282,9 @@ class CameraActivity : AppCompatActivity() {
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
 
-        val r = runner
-        if (r != null) {
-            analysis.setAnalyzer(cameraExecutor, HolisticFrameAnalyzer({ true }, r))
+        val aiRunner = runner
+        if (aiRunner != null) {
+            analysis.setAnalyzer(cameraExecutor, HolisticFrameAnalyzer({ true }, aiRunner))
         }
 
         provider.unbindAll()

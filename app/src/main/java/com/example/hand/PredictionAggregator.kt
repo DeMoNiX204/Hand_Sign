@@ -35,7 +35,7 @@ class PredictionAggregator(private val numClasses: Int) {
         var best: AggBest? = null
 
         for (i in 0 until numClasses) {
-            if (excludeIdx != null && i == excludeIdx) continue
+            if ( i == excludeIdx) continue
 
             val c = counts[i]
             if (c <= 0) continue

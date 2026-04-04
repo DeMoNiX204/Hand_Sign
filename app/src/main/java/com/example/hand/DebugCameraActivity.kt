@@ -245,7 +245,7 @@ class DebugCameraActivity : AppCompatActivity() {
         }
 
         // 1. ได้ค่าดิบ (Raw Probabilities)
-        val rawProbs = classifier?.predict(seq.toFlatFloatArray()) ?: return
+        val rawProbs = classifier?.predict(seq.getStartIndex()) ?: return
 
         // 3. คำนวณ EMA Smoothing
         val probs = if (prevProbs == null) {

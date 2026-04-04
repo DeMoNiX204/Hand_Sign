@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
 
         // Buttons
         val fabCamera = findViewById<FrameLayout>(R.id.fabCamera)
-        val btnDebug  = findViewById<ImageButton>(R.id.btnDebug)
+//        val btnDebug  = findViewById<ImageButton>(R.id.btnDebug)
 
         // FAB Camera - เปิดกล้อง
         fabCamera.setOnClickListener {
@@ -35,8 +35,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Debug Button - เปิด Debug Camera
-        btnDebug.setOnClickListener {
-            startActivity(Intent(this, DebugCameraActivity::class.java))
-        }
+//        btnDebug.setOnClickListener {
+//            startActivity(Intent(this, DebugCameraActivity::class.java))
+//        }
     }
 }

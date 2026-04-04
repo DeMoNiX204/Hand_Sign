@@ -38,7 +38,7 @@ class HolisticFrameAnalyzer(
             lastTs  = ts
 
 
-            runner.detectAsync(
+            runner.processFrame(
                 rgbaBuffer     = rgba,
                 width          = width,
                 height         = height,
