@@ -11,8 +11,7 @@ object Holistic258Extractor {
     // ============
     private const val SWAP_AXES = true
 
-    // ปรับให้ตรงกับ Python (0.001)
-    private const val MIN_BODY_SIZE = 0.001f
+    private const val MIN_BODY_SIZE = 0.01f
 
     // ระบบจำค่าล่าสุด (Forward Fill)
     private var prevPose = FloatArray(132)
@@ -49,7 +48,7 @@ object Holistic258Extractor {
             23 to 24, 24 to 23, 25 to 26, 26 to 25, 27 to 28, 28 to 27, 29 to 30, 30 to 29, 31 to 32, 32 to 31
         )
 
-        // 1. คำนวณ Scale และ Ref (สูตรเดียวกับ Python 100%)
+        //  คำนวณ Scale และ Ref
         val lShoulderRaw = getOrNullSafe(pose, swapMap[11] ?: 11)
         val rShoulderRaw = getOrNullSafe(pose, swapMap[12] ?: 12)
 
@@ -101,7 +100,7 @@ object Holistic258Extractor {
         // ==============================
         val realRightHand = r.rightHandLandmarks()
         if (realRightHand.isEmpty()) {
-            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
+            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน
             for (v in prevRightHand) out[k++] = v
         } else {
             val startK = k
@@ -120,7 +119,7 @@ object Holistic258Extractor {
         // ==============================
         val realLeftHand = r.leftHandLandmarks()
         if (realLeftHand.isEmpty()) {
-            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน 0f
+            // FORWARD FILL: เอามือเฟรมที่แล้วมาใส่แทน
             for (v in prevLeftHand) out[k++] = v
         } else {
             val startK = k

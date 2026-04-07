@@ -73,7 +73,6 @@ class HolisticLandmarkerRunner(
             landmarker?.detectAsync(mpImage, opt, timestampMs)
 
         } catch (e: Exception) {
-            // กิน Error ทิ้งไปเลยถ้ามันพังตอนปิด
             if (!isClosed) {
                 onError("Detect error: ${e.message}")
             }
